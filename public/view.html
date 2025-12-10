@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shared Note - Markdown Notes</title>
+    
+    <!-- KaTeX for Math -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/mhchem.min.js"></script>
+    
+    <!-- Marked for Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <!-- Highlight.js for code -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    
+    <!-- Mermaid for diagrams -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    
+    <!-- Pako for DEFLATE decompression -->
+    <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-color: #1a1a2e;
+            --text-color: #eaeaea;
+            --accent-color: #7c3aed;
+            --secondary-bg: #16213e;
+            --border-color: #0f3460;
+            --code-bg: #0d1117;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            text-decoration: none;
+        }
+
+        .logo:hover {
+            opacity: 0.8;
+        }
+
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #6d28d9;
+        }
+
+        .btn-secondary {
+            background: var(--secondary-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+
+        .note-header {
+            margin-bottom: 2rem;
+        }
+
+        .note-title {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-color);
+        }
+
+        .note-meta {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .note-content {
+            background: var(--secondary-bg);
+            border-radius: 12px;
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Markdown content styles */
+        .note-content h1, .note-content h2, .note-content h3,
+        .note-content h4, .note-content h5, .note-content h6 {
+            margin: 1.5rem 0 0.75rem;
+            color: var(--text-color);
+        }
+
+        .note-content h1 { font-size: 1.8rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; }
+        .note-content h2 { font-size: 1.5rem; }
+        .note-content h3 { font-size: 1.3rem; }
+
+        .note-content p {
+            margin: 1rem 0;
+        }
+
+        .note-content a {
+            color: var(--accent-color);
+            text-decoration: none;
+        }
+
+        .note-content a:hover {
+            text-decoration: underline;
+        }
+
+        .note-content ul, .note-content ol {
+            margin: 1rem 0;
+            padding-left: 2rem;
+        }
+
+        .note-content li {
+            margin: 0.5rem 0;
+        }
+
+        .note-content blockquote {
+            border-left: 4px solid var(--accent-color);
+            margin: 1rem 0;
+            padding: 0.5rem 1rem;
+            background: rgba(124, 58, 237, 0.1);
+            border-radius: 0 8px 8px 0;
+        }
+
+        .note-content code {
+            font-family: 'Fira Code', 'Consolas', monospace;
+            background: var(--code-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        .note-content pre {
+            background: var(--code-bg);
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        .note-content pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .note-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        .note-content th, .note-content td {
+            border: 1px solid var(--border-color);
+            padding: 0.75rem;
+            text-align: left;
+        }
+
+        .note-content th {
+            background: var(--code-bg);
+        }
+
+        .note-content img {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+
+        .note-content hr {
+            border: none;
+            border-top: 1px solid var(--border-color);
+            margin: 2rem 0;
+        }
+
+        /* Math styles */
+        .katex-display {
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 1rem 0;
+        }
+
+        .katex {
+            font-size: 1.1em;
+        }
+
+        /* Task lists */
+        .note-content input[type="checkbox"] {
+            margin-right: 0.5rem;
+        }
+
+        /* Error state */
+        .error-container {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .error-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .error-title {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--error-color);
+        }
+
+        .error-message {
+            color: #888;
+            margin-bottom: 2rem;
+        }
+
+        /* Loading state */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            margin-top: 1rem;
+            color: #888;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        footer a {
+            color: var(--accent-color);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .note-title {
+                font-size: 1.5rem;
+            }
+
+            .note-content {
+                padding: 1rem;
+            }
+        }
+
+        /* Mermaid diagrams */
+        .mermaid {
+            background: transparent;
+            text-align: center;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="/" class="logo">📝 Markdown Notes</a>
+            <div class="actions">
+                <button class="btn btn-secondary" onclick="copyContent()">
+                    📋 Copy
+                </button>
+                <a href="/" class="btn btn-primary">
+                    ✏️ Create Note
+                </a>
+            </div>
+        </header>
+
+        <main id="main-content">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p class="loading-text">Loading shared note...</p>
+            </div>
+        </main>
+
+        <footer>
+            <p>Powered by <a href="/">Markdown Notes</a> | Hosted at <a href="https://markdown.toontamilindia.in">markdown.toontamilindia.in</a></p>
+        </footer>
+    </div>
+
+    <script>
+        // Initialize Mermaid
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'dark',
+            securityLevel: 'loose'
+        });
+
+        // Configure Marked
+        marked.setOptions({
+            gfm: true,
+            breaks: true,
+            highlight: function(code, lang) {
+                if (lang && hljs.getLanguage(lang)) {
+                    try {
+                        return hljs.highlight(code, { language: lang }).value;
+                    } catch (e) {}
+                }
+                return hljs.highlightAuto(code).value;
+            }
+        });
+
+        // Math placeholders storage
+        let mathPlaceholders = [];
+
+        // Preprocess math before markdown parsing
+        function preprocessMath(content) {
+            mathPlaceholders = [];
+            let counter = 0;
+            
+            // Protect display math ($$...$$)
+            content = content.replace(/\$\$([\s\S]*?)\$\$/g, (match, math) => {
+                const placeholder = `%%MATH_DISPLAY_${counter}%%`;
+                mathPlaceholders.push({ placeholder, math: math.trim(), display: true });
+                counter++;
+                return placeholder;
+            });
+            
+            // Protect inline math ($...$)
+            content = content.replace(/\$([^\$\n]+?)\$/g, (match, math) => {
+                const placeholder = `%%MATH_INLINE_${counter}%%`;
+                mathPlaceholders.push({ placeholder, math: math.trim(), display: false });
+                counter++;
+                return placeholder;
+            });
+            
+            // Protect \[...\] display math
+            content = content.replace(/\\\[([\s\S]*?)\\\]/g, (match, math) => {
+                const placeholder = `%%MATH_DISPLAY_${counter}%%`;
+                mathPlaceholders.push({ placeholder, math: math.trim(), display: true });
+                counter++;
+                return placeholder;
+            });
+            
+            // Protect \(...\) inline math
+            content = content.replace(/\\\(([\s\S]*?)\\\)/g, (match, math) => {
+                const placeholder = `%%MATH_INLINE_${counter}%%`;
+                mathPlaceholders.push({ placeholder, math: math.trim(), display: false });
+                counter++;
+                return placeholder;
+            });
+            
+            return content;
+        }
+
+        // Postprocess: restore math and render with KaTeX
+        function postprocessMath(html) {
+            mathPlaceholders.forEach(({ placeholder, math, display }) => {
+                try {
+                    const rendered = katex.renderToString(math, {
+                        displayMode: display,
+                        throwOnError: false,
+                        trust: true,
+                        strict: false,
+                        macros: {
+                            "\\R": "\\mathbb{R}",
+                            "\\N": "\\mathbb{N}",
+                            "\\Z": "\\mathbb{Z}",
+                            "\\Q": "\\mathbb{Q}",
+                            "\\C": "\\mathbb{C}"
+                        }
+                    });
+                    html = html.replace(placeholder, rendered);
+                } catch (e) {
+                    console.error('KaTeX error:', e);
+                    html = html.replace(placeholder, `<code class="math-error">${math}</code>`);
+                }
+            });
+            return html;
+        }
+
+        // Render markdown with math support
+        function renderMarkdown(content) {
+            // Preprocess math
+            content = preprocessMath(content);
+            
+            // Parse markdown
+            let html = marked.parse(content);
+            
+            // Postprocess math
+            html = postprocessMath(html);
+            
+            return html;
+        }
+
+        // Decode note from URL (Pako DEFLATE + base64url)
+        function decodeNoteFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            const encoded = params.get('d'); // 'd' parameter from app.js
+            
+            if (!encoded) {
+                return null;
+            }
+            
+            try {
+                // Restore base64 format from base64url
+                let base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+                // Add padding if needed
+                while (base64.length % 4) base64 += '=';
+                
+                let decoded;
+                
+                if (typeof pako !== 'undefined') {
+                    try {
+                        // Decode base64 to bytes
+                        const binaryStr = atob(base64);
+                        const bytes = new Uint8Array(binaryStr.length);
+                        for (let i = 0; i < binaryStr.length; i++) {
+                            bytes[i] = binaryStr.charCodeAt(i);
+                        }
+                        // Decompress with Pako INFLATE
+                        const decompressed = pako.inflate(bytes);
+                        decoded = new TextDecoder().decode(decompressed);
+                    } catch (pakoErr) {
+                        // Pako failed, try simple base64
+                        console.log('Pako decompression failed, trying base64 fallback');
+                        decoded = decodeURIComponent(escape(atob(base64)));
+                    }
+                } else {
+                    // No Pako, use simple base64
+                    decoded = decodeURIComponent(escape(atob(base64)));
+                }
+                
+                const noteData = JSON.parse(decoded);
+                return {
+                    title: noteData.t || noteData.title || 'Shared Note',
+                    content: noteData.c || noteData.content || '',
+                    sharedAt: noteData.d || new Date().toISOString()
+                };
+            } catch (e) {
+                console.error('Error decoding note:', e);
+                return null;
+            }
+        }
+
+        // Show error
+        function showError(title, message) {
+            document.getElementById('main-content').innerHTML = `
+                <div class="error-container">
+                    <div class="error-icon">❌</div>
+                    <h2 class="error-title">${title}</h2>
+                    <p class="error-message">${message}</p>
+                    <a href="/" class="btn btn-primary">Create Your Own Note</a>
+                </div>
+            `;
+        }
+
+        // Display note
+        function displayNote(note) {
+            const renderedContent = renderMarkdown(note.content);
+            
+            document.getElementById('main-content').innerHTML = `
+                <div class="note-header">
+                    <h1 class="note-title">${escapeHtml(note.title)}</h1>
+                    ${note.sharedAt ? `<p class="note-meta">Shared: ${new Date(note.sharedAt).toLocaleDateString()}</p>` : ''}
+                </div>
+                <div class="note-content" id="note-content">
+                    ${renderedContent}
+                </div>
+            `;
+            
+            // Update page title
+            document.title = `${note.title} - Markdown Notes`;
+            
+            // Render Mermaid diagrams
+            setTimeout(() => {
+                document.querySelectorAll('.language-mermaid, pre code.mermaid').forEach((el, index) => {
+                    const code = el.textContent;
+                    const container = document.createElement('div');
+                    container.className = 'mermaid';
+                    container.id = `mermaid-${index}`;
+                    container.textContent = code;
+                    el.closest('pre').replaceWith(container);
+                });
+                mermaid.run();
+            }, 100);
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Store content for copy
+        let currentNote = null;
+
+        // Copy content function
+        function copyContent() {
+            if (currentNote) {
+                navigator.clipboard.writeText(currentNote.content).then(() => {
+                    alert('Content copied to clipboard!');
+                }).catch(() => {
+                    // Fallback
+                    const textarea = document.createElement('textarea');
+                    textarea.value = currentNote.content;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    alert('Content copied to clipboard!');
+                });
+            }
+        }
+
+        // Get alias from URL path (e.g., /view.html?alias=my-note or /my-note)
+        function getAliasFromUrl() {
+            // Check query parameter first
+            const params = new URLSearchParams(window.location.search);
+            const aliasParam = params.get('alias');
+            if (aliasParam) return aliasParam;
+            
+            // Check URL path (for /my-note style URLs)
+            const path = window.location.pathname;
+            const segments = path.split('/').filter(s => s && s !== 'view.html');
+            if (segments.length > 0) {
+                return segments[segments.length - 1];
+            }
+            return null;
+        }
+
+        // Load note by alias from KV API (primary) or shared-notes.json (fallback)
+        async function loadNoteByAlias(alias) {
+            // Try KV API first
+            try {
+                const response = await fetch(`/api/note/${alias}`);
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success && result.data) {
+                        const note = decompressNoteData(result.data);
+                        if (note) {
+                            note.views = result.views;
+                            return note;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.log('KV API not available, trying fallback...');
+            }
+            
+            // Fallback to shared-notes.json
+            try {
+                const response = await fetch('/shared-notes.json');
+                if (!response.ok) throw new Error('Failed to load shared notes');
+                
+                const data = await response.json();
+                
+                // Check aliases map for compressed data
+                if (data.aliases && data.aliases[alias]) {
+                    const compressedData = data.aliases[alias];
+                    return decompressNoteData(compressedData);
+                }
+                
+                // Also check notes by alias
+                if (data.notes) {
+                    for (const [id, note] of Object.entries(data.notes)) {
+                        if (note.alias === alias && note.data) {
+                            return decompressNoteData(note.data);
+                        }
+                    }
+                }
+                
+                return null;
+            } catch (e) {
+                console.error('Error loading note by alias:', e);
+                return null;
+            }
+        }
+
+        // Decompress note data (Pako DEFLATE + base64url)
+        function decompressNoteData(encoded) {
+            try {
+                // Restore base64 format from base64url
+                let base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+                while (base64.length % 4) base64 += '=';
+                
+                let decoded;
+                
+                if (typeof pako !== 'undefined') {
+                    try {
+                        const binaryStr = atob(base64);
+                        const bytes = new Uint8Array(binaryStr.length);
+                        for (let i = 0; i < binaryStr.length; i++) {
+                            bytes[i] = binaryStr.charCodeAt(i);
+                        }
+                        const decompressed = pako.inflate(bytes);
+                        decoded = new TextDecoder().decode(decompressed);
+                    } catch (pakoErr) {
+                        decoded = decodeURIComponent(escape(atob(base64)));
+                    }
+                } else {
+                    decoded = decodeURIComponent(escape(atob(base64)));
+                }
+                
+                const noteData = JSON.parse(decoded);
+                return {
+                    title: noteData.t || noteData.title || 'Shared Note',
+                    content: noteData.c || noteData.content || '',
+                    sharedAt: noteData.d || new Date().toISOString()
+                };
+            } catch (e) {
+                console.error('Decompression error:', e);
+                return null;
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Wait a bit for Pako to load
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            let note = null;
+            
+            // First, check for ?d= parameter (direct encoded data)
+            note = decodeNoteFromUrl();
+            
+            // If no direct data, check for alias
+            if (!note) {
+                const alias = getAliasFromUrl();
+                if (alias && alias !== 'view' && alias !== 'view.html') {
+                    note = await loadNoteByAlias(alias);
+                }
+            }
+            
+            if (note) {
+                currentNote = note;
+                displayNote(note);
+            } else {
+                // Check if we have any parameters at all
+                const params = new URLSearchParams(window.location.search);
+                const hasParams = params.has('d') || params.has('alias');
+                
+                if (hasParams) {
+                    showError('Note Not Found', 'The shared note could not be found or the link is invalid.');
+                } else {
+                    // No parameters - redirect to main page
+                    window.location.href = '/';
+                }
+            }
+        });
+    </script>
+</body>
+</html>

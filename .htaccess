@@ -1,0 +1,21 @@
+# Markdown Notes - Alias URL Routing
+# Routes /alias to view.html?alias=alias
+# view.html loads the note data from shared-notes.json
+
+RewriteEngine On
+RewriteBase /
+
+# Don't rewrite actual files or directories
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Don't rewrite files with extensions
+RewriteCond %{REQUEST_URI} \.(html|js|css|json|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|map|md|txt)$ [NC]
+RewriteRule ^ - [L]
+
+# Don't rewrite root
+RewriteRule ^$ - [L]
+
+# Rewrite clean URLs (alphanumeric and hyphens only) to view.html with alias
+RewriteRule ^([a-zA-Z0-9_-]+)$ /view.html?alias=$1 [L,QSA]

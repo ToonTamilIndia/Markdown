@@ -1,0 +1,10 @@
+# Cloudflare Pages Redirects
+# Only redirect specific alias patterns to view.html
+# Static files (.html, .js, .css, .json, etc.) are served normally by Cloudflare
+
+# DO NOT use catch-all rules - they break static file serving
+# Aliases must be manually added here or use a Worker instead
+
+# Example alias redirects (add your aliases here):
+# /my-note  /view.html?alias=my-note  200
+# /math-tutorial  /view.html?alias=math-tutorial  200

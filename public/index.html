@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Notes - ToonTamilIndia</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- KaTeX for Math rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <!-- KaTeX mhchem extension for chemistry (optional) -->
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/mhchem.min.js"></script>
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Highlight.js for code syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <!-- Pako for DEFLATE compression -->
+    <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h1>📝 MD Notes</h1>
+                <button class="new-note-btn" onclick="createNewNote()">+ New Note</button>
+            </div>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search notes..." oninput="searchNotes()">
+            </div>
+            <div class="notes-list" id="notesList">
+                <!-- Notes will be loaded here -->
+            </div>
+            <div class="sidebar-footer">
+                <button class="master-key-btn" onclick="showMasterKeyModal()">🔑 Master Key</button>
+                <button class="import-btn" onclick="showImportModal()">📥 Import</button>
+                <button class="export-btn" onclick="exportAllNotes()">📤 Export</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="toolbar">
+                <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+                <div class="note-title-container">
+                    <input type="text" id="noteTitle" placeholder="Note Title..." class="note-title-input">
+                    <input type="text" id="noteAlias" placeholder="Custom alias (optional)" class="note-alias-input">
+                </div>
+                <div class="toolbar-actions">
+                    <button class="toolbar-btn" onclick="toggleView()" id="viewToggle" title="Toggle Preview">👁️ Preview</button>
+                    <button class="toolbar-btn" onclick="saveNote()" title="Save Note">💾 Save</button>
+                    <button class="toolbar-btn share-btn" onclick="showShareModal()" title="Share Note">🔗 Share</button>
+                    <button class="toolbar-btn" onclick="copyToClipboard()" title="Copy Markdown">📋 Copy</button>
+                    <button class="toolbar-btn" onclick="showMoreOptions()" title="More Options">⚙️ More</button>
+                    <button class="toolbar-btn danger" onclick="deleteCurrentNote()" title="Delete Note">🗑️ Delete</button>
+                </div>
+            </div>
+
+            <div class="editor-container">
+                <!-- Editor Panel -->
+                <div class="editor-panel" id="editorPanel">
+                    <div class="format-toolbar">
+                        <button onclick="insertFormat('**', '**')" title="Bold">B</button>
+                        <button onclick="insertFormat('*', '*')" title="Italic">I</button>
+                        <button onclick="insertFormat('~~', '~~')" title="Strikethrough">S̶</button>
+                        <button onclick="insertFormat('`', '`')" title="Inline Code">&lt;/&gt;</button>
+                        <button onclick="insertFormat('\n```\n', '\n```\n')" title="Code Block">{ }</button>
+                        <button onclick="insertFormat('# ', '')" title="Heading 1">H1</button>
+                        <button onclick="insertFormat('## ', '')" title="Heading 2">H2</button>
+                        <button onclick="insertFormat('### ', '')" title="Heading 3">H3</button>
+                        <button onclick="insertFormat('- ', '')" title="List">•</button>
+                        <button onclick="insertFormat('1. ', '')" title="Numbered List">1.</button>
+                        <button onclick="insertFormat('[', '](url)')" title="Link">🔗</button>
+                        <button onclick="insertFormat('![alt](', ')')" title="Image">🖼️</button>
+                        <button onclick="insertFormat('> ', '')" title="Quote">❝</button>
+                        <button onclick="insertFormat('$', '$')" title="Inline Math">∑</button>
+                        <button onclick="insertFormat('\n$$\n', '\n$$\n')" title="Block Math">∫</button>
+                        <button onclick="insertFormat('---\n', '')" title="Horizontal Rule">—</button>
+                        <button onclick="insertFormat('| Col1 | Col2 |\n|------|------|\n| ', ' | data |')" title="Table">⊞</button>
+                        <button onclick="insertFormat('- [ ] ', '')" title="Task List">☑️</button>
+                        <button onclick="insertFormat('<details>\n<summary>Click to expand</summary>\n\n', '\n\n</details>')" title="Collapsible">📁</button>
+                        <button onclick="insertFormat('::: warning\n', '\n:::')" title="Callout">💡</button>
+                        <button onclick="insertFormat('```mermaid\ngraph TD\n    A[Start] --> B[End]\n', '```')" title="Diagram">📊</button>
+                    </div>
+                    <textarea id="markdownEditor" placeholder="Start writing your markdown here...
+
+Supports:
+• **Bold**, *Italic*, ~~Strikethrough~~
+• `inline code` and code blocks
+• Math equations: $E = mc^2$ or block equations with $$
+• Tables, lists, links, images
+• And more!
+
+Paste your notes directly here!"></textarea>
+                </div>
+
+                <!-- Preview Panel -->
+                <div class="preview-panel" id="previewPanel">
+                    <div class="preview-content" id="previewContent">
+                        <p class="placeholder-text">Preview will appear here...</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Master Key Modal -->
+    <div class="modal" id="masterKeyModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔑 Master Key Access</h2>
+                <button class="modal-close" onclick="closeMasterKeyModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <p>Enter the master key to unlock editing for all notes:</p>
+                <input type="password" id="masterKeyInput" placeholder="Enter master key...">
+                <div class="modal-actions">
+                    <button class="btn-primary" onclick="verifyMasterKey()">Unlock</button>
+                    <button class="btn-secondary" onclick="closeMasterKeyModal()">Cancel</button>
+                </div>
+                <p class="master-key-status" id="masterKeyStatus"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div class="modal" id="importModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>📥 Import Notes</h2>
+                <button class="modal-close" onclick="closeImportModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="import-tabs">
+                    <button class="share-tab active" onclick="switchImportTab('paste')">📋 Paste</button>
+                    <button class="share-tab" onclick="switchImportTab('file')">📁 File</button>
+                    <button class="share-tab" onclick="switchImportTab('url')">🌐 URL</button>
+                    <button class="share-tab" onclick="switchImportTab('json')">📦 JSON Backup</button>
+                </div>
+                
+                <div class="import-content" id="importPasteContent">
+                    <p>Paste your markdown content or ChatGPT notes:</p>
+                    <textarea id="importTextarea" placeholder="Paste content here..."></textarea>
+                    <div class="modal-actions">
+                        <button class="btn-primary" onclick="importNotes()">Import</button>
+                        <button class="btn-secondary" onclick="closeImportModal()">Cancel</button>
+                    </div>
+                </div>
+                
+                <div class="import-content hidden" id="importFileContent">
+                    <p>Upload a Markdown (.md) or text file:</p>
+                    <div class="file-upload-box" onclick="document.getElementById('fileInput').click()">
+                        <div class="file-upload-icon">📄</div>
+                        <div class="file-upload-text">Click to select file or drag & drop</div>
+                        <input type="file" id="fileInput" accept=".md,.txt,.markdown" onchange="handleFileImport(event)" style="display:none">
+                    </div>
+                    <div id="filePreview" class="file-preview hidden"></div>
+                </div>
+                
+                <div class="import-content hidden" id="importUrlContent">
+                    <p>Import from a URL (raw markdown file):</p>
+                    <input type="text" id="importUrl" placeholder="https://raw.githubusercontent.com/..." class="import-url-input">
+                    <div class="modal-actions">
+                        <button class="btn-primary" onclick="importFromUrl()">Import from URL</button>
+                        <button class="btn-secondary" onclick="closeImportModal()">Cancel</button>
+                    </div>
+                </div>
+                
+                <div class="import-content hidden" id="importJsonContent">
+                    <p>Restore from a JSON backup file:</p>
+                    <div class="file-upload-box" onclick="document.getElementById('jsonInput').click()">
+                        <div class="file-upload-icon">📦</div>
+                        <div class="file-upload-text">Click to select JSON backup file</div>
+                        <input type="file" id="jsonInput" accept=".json" onchange="handleJsonImport(event)" style="display:none">
+                    </div>
+                    <p class="import-warning">⚠️ This will add all notes from the backup to your existing notes.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Paste Detection Overlay -->
+    <div class="paste-overlay" id="pasteOverlay">
+        <div class="paste-message">
+            <span>📋 Large content detected! Creating new note...</span>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div class="modal" id="shareModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>🔗 Share Note</h2>
+                <button class="modal-close" onclick="closeShareModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="share-tabs">
+                    <button class="share-tab active" onclick="switchShareTab('link')">📎 Share Link</button>
+                    <button class="share-tab" onclick="switchShareTab('embed')">🖼️ Embed</button>
+                    <button class="share-tab" onclick="switchShareTab('export')">📄 Export</button>
+                    <button class="share-tab" onclick="switchShareTab('qr')">📱 QR Code</button>
+                    <button class="share-tab" onclick="switchShareTab('manage')">⚙️ Manage</button>
+                </div>
+                
+                <div class="share-content" id="shareLinkContent">
+                    <div id="shareStatusContainer"></div>
+                    <p>Share this note with anyone using the link below:</p>
+                    <div class="share-url-box">
+                        <input type="text" id="shareUrl" readonly>
+                        <button onclick="copyShareLink()" class="btn-copy">📋 Copy</button>
+                    </div>
+                    <div class="share-options">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="shareReadOnly" checked>
+                            Read-only mode
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="shareWithMath" checked>
+                            Include math rendering
+                        </label>
+                    </div>
+                    <div class="share-social">
+                        <p>Share on:</p>
+                        <div class="social-buttons">
+                            <button onclick="shareToTwitter()" class="social-btn twitter">𝕏 Twitter</button>
+                            <button onclick="shareToLinkedIn()" class="social-btn linkedin">in LinkedIn</button>
+                            <button onclick="shareToWhatsApp()" class="social-btn whatsapp">💬 WhatsApp</button>
+                            <button onclick="shareToTelegram()" class="social-btn telegram">✈️ Telegram</button>
+                            <button onclick="shareByEmail()" class="social-btn email">📧 Email</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="share-content hidden" id="shareEmbedContent">
+                    <p>Embed this note in your website:</p>
+                    <textarea id="embedCode" readonly class="embed-textarea"></textarea>
+                    <button onclick="copyEmbedCode()" class="btn-primary">📋 Copy Embed Code</button>
+                </div>
+                
+                <div class="share-content hidden" id="shareExportContent">
+                    <p>Export this note in different formats:</p>
+                    <div class="export-buttons">
+                        <button onclick="exportAsMarkdown()" class="export-btn-large">📝 Markdown (.md)</button>
+                        <button onclick="exportAsHTML()" class="export-btn-large">🌐 HTML (.html)</button>
+                        <button onclick="exportAsPDF()" class="export-btn-large">📄 PDF (Print)</button>
+                        <button onclick="exportAsText()" class="export-btn-large">📃 Plain Text (.txt)</button>
+                        <button onclick="exportAsJSON()" class="export-btn-large">🔧 JSON (.json)</button>
+                    </div>
+                </div>
+                
+                <div class="share-content hidden" id="shareQrContent">
+                    <p>Scan QR code to open this note:</p>
+                    <div class="qr-container" id="qrContainer">
+                        <canvas id="qrCanvas"></canvas>
+                    </div>
+                    <button onclick="downloadQR()" class="btn-primary">📥 Download QR Code</button>
+                </div>
+                
+                <div class="share-content hidden" id="shareManageContent">
+                    <div class="manage-header">
+                        <h3>📋 Shared Notes</h3>
+                        <div class="manage-actions">
+                            <button onclick="refreshSharedList()" class="btn-secondary">🔄 Refresh</button>
+                            <button onclick="exportHostingFiles()" class="btn-primary">📥 Export Backup</button>
+                        </div>
+                    </div>
+                    <p class="manage-description" style="background: #1c2128; padding: 12px; border-radius: 8px; border-left: 3px solid #3fb950;">
+                        <strong>✨ KV Storage Enabled:</strong><br>
+                        Notes with aliases are automatically saved to Cloudflare KV!<br>
+                        Just add an alias and click Share - that's it! 🚀
+                    </p>
+                    <p id="shareSizeInfo" style="margin-top: 8px; font-size: 0.9rem;"></p>
+                    <div class="shared-links-list" id="sharedLinksList">
+                        <!-- Shared links will be rendered here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- More Options Modal -->
+    <div class="modal" id="moreOptionsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>⚙️ More Options</h2>
+                <button class="modal-close" onclick="closeMoreOptions()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="options-section">
+                    <h3>📝 Note Settings</h3>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="optionAutoSave" checked onchange="toggleAutoSave()">
+                        Auto-save notes
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="optionSpellCheck" onchange="toggleSpellCheck()">
+                        Enable spell check
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="optionLineNumbers" onchange="toggleLineNumbers()">
+                        Show line numbers
+                    </label>
+                </div>
+                
+                <div class="options-section">
+                    <h3>🎨 Appearance</h3>
+                    <div class="option-row">
+                        <label>Theme:</label>
+                        <select id="themeSelect" onchange="changeTheme()">
+                            <option value="dark">Dark (Default)</option>
+                            <option value="light">Light</option>
+                            <option value="sepia">Sepia</option>
+                            <option value="nord">Nord</option>
+                        </select>
+                    </div>
+                    <div class="option-row">
+                        <label>Font Size:</label>
+                        <input type="range" id="fontSizeRange" min="12" max="24" value="15" onchange="changeFontSize()">
+                        <span id="fontSizeValue">15px</span>
+                    </div>
+                    <div class="option-row">
+                        <label>Editor Font:</label>
+                        <select id="fontSelect" onchange="changeFont()">
+                            <option value="monospace">Monospace</option>
+                            <option value="'Fira Code', monospace">Fira Code</option>
+                            <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
+                            <option value="sans-serif">Sans Serif</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="options-section">
+                    <h3>📊 Statistics</h3>
+                    <div class="stats-grid" id="noteStats">
+                        <div class="stat-item">
+                            <span class="stat-value" id="statWords">0</span>
+                            <span class="stat-label">Words</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="statChars">0</span>
+                            <span class="stat-label">Characters</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="statLines">0</span>
+                            <span class="stat-label">Lines</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="statReadTime">0</span>
+                            <span class="stat-label">Min Read</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="options-section">
+                    <h3>🔧 Actions</h3>
+                    <div class="action-buttons">
+                        <button onclick="duplicateNote()" class="action-btn">📑 Duplicate Note</button>
+                        <button onclick="printNote()" class="action-btn">🖨️ Print Note</button>
+                        <button onclick="showVersionHistory()" class="action-btn">📜 Version History</button>
+                        <button onclick="clearAllNotes()" class="action-btn danger">🗑️ Clear All Notes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Version History Modal -->
+    <div class="modal" id="versionModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>📜 Version History</h2>
+                <button class="modal-close" onclick="closeVersionHistory()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="version-list" id="versionList">
+                    <!-- Versions will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Shared Note (Read-only mode) -->
+    <div class="shared-view hidden" id="sharedView">
+        <div class="shared-header">
+            <h1 id="sharedTitle">Shared Note</h1>
+            <div class="shared-actions">
+                <button onclick="copySharedNote()" class="toolbar-btn">📋 Copy</button>
+                <button onclick="exitSharedView()" class="toolbar-btn">✏️ Create Your Own</button>
+            </div>
+        </div>
+        <div class="shared-content" id="sharedContent">
+            <!-- Shared note rendered here -->
+        </div>
+    </div>
+
+    <!-- Mermaid for diagrams -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
