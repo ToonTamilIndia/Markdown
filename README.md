@@ -1,3 +1,14 @@
+
+---
+
+### ⚠️ **Disclaimer**
+
+*This repository contains vibe-coded scripts intended for personal use. 
+Contributions are welcome, but breakages are expected 
+and if something breaks, it’s a feature, not a bug.*
+
+---
+
 # 📝 Markdown Notes - ToonTamilIndia
 
 A beautiful, feature-rich Markdown notes application with LaTeX math support, perfect for capturing and organizing notes from ChatGPT and other sources.
