@@ -1,0 +1,17 @@
+{
+    "name": "Markdown Notes - ToonTamilIndia",
+    "short_name": "MD Notes",
+    "description": "A beautiful Markdown notes app with LaTeX math support",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0d1117",
+    "theme_color": "#58a6ff",
+    "orientation": "any",
+    "icons": [
+        {
+            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📝</text></svg>",
+            "sizes": "any",
+            "type": "image/svg+xml"
+        }
+    ]
+}
