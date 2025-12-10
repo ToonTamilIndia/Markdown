@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Notes - ToonTamilIndia</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- KaTeX for Math rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Highlight.js for code syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h1>📝 MD Notes</h1>
+                <button class="new-note-btn" onclick="createNewNote()">+ New Note</button>
+            </div>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search notes..." oninput="searchNotes()">
+            </div>
+            <div class="notes-list" id="notesList">
+                <!-- Notes will be loaded here -->
+            </div>
+            <div class="sidebar-footer">
+                <button class="master-key-btn" onclick="showMasterKeyModal()">🔑 Master Key</button>
+                <button class="export-btn" onclick="exportAllNotes()">📤 Export All</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="toolbar">
+                <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+                <div class="note-title-container">
+                    <input type="text" id="noteTitle" placeholder="Note Title..." class="note-title-input">
+                    <input type="text" id="noteAlias" placeholder="Custom alias (optional)" class="note-alias-input">
+                </div>
+                <div class="toolbar-actions">
+                    <button class="toolbar-btn" onclick="toggleView()" id="viewToggle" title="Toggle Preview">👁️ Preview</button>
+                    <button class="toolbar-btn" onclick="saveNote()" title="Save Note">💾 Save</button>
+                    <button class="toolbar-btn" onclick="copyToClipboard()" title="Copy Markdown">📋 Copy</button>
+                    <button class="toolbar-btn danger" onclick="deleteCurrentNote()" title="Delete Note">🗑️ Delete</button>
+                </div>
+            </div>
+
+            <div class="editor-container">
+                <!-- Editor Panel -->
+                <div class="editor-panel" id="editorPanel">
+                    <div class="format-toolbar">
+                        <button onclick="insertFormat('**', '**')" title="Bold">B</button>
+                        <button onclick="insertFormat('*', '*')" title="Italic">I</button>
+                        <button onclick="insertFormat('~~', '~~')" title="Strikethrough">S̶</button>
+                        <button onclick="insertFormat('`', '`')" title="Inline Code">&lt;/&gt;</button>
+                        <button onclick="insertFormat('\n```\n', '\n```\n')" title="Code Block">{ }</button>
+                        <button onclick="insertFormat('# ', '')" title="Heading 1">H1</button>
+                        <button onclick="insertFormat('## ', '')" title="Heading 2">H2</button>
+                        <button onclick="insertFormat('### ', '')" title="Heading 3">H3</button>
+                        <button onclick="insertFormat('- ', '')" title="List">•</button>
+                        <button onclick="insertFormat('1. ', '')" title="Numbered List">1.</button>
+                        <button onclick="insertFormat('[', '](url)')" title="Link">🔗</button>
+                        <button onclick="insertFormat('![alt](', ')')" title="Image">🖼️</button>
+                        <button onclick="insertFormat('> ', '')" title="Quote">❝</button>
+                        <button onclick="insertFormat('$', '$')" title="Inline Math">∑</button>
+                        <button onclick="insertFormat('\n$$\n', '\n$$\n')" title="Block Math">∫</button>
+                        <button onclick="insertFormat('---\n', '')" title="Horizontal Rule">—</button>
+                        <button onclick="insertFormat('| Col1 | Col2 |\n|------|------|\n| ', ' | data |')" title="Table">⊞</button>
+                    </div>
+                    <textarea id="markdownEditor" placeholder="Start writing your markdown here...
+
+Supports:
+• **Bold**, *Italic*, ~~Strikethrough~~
+• `inline code` and code blocks
+• Math equations: $E = mc^2$ or block equations with $$
+• Tables, lists, links, images
+• And more!
+
+Paste your ChatGPT notes directly here!"></textarea>
+                </div>
+
+                <!-- Preview Panel -->
+                <div class="preview-panel" id="previewPanel">
+                    <div class="preview-content" id="previewContent">
+                        <p class="placeholder-text">Preview will appear here...</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Master Key Modal -->
+    <div class="modal" id="masterKeyModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔑 Master Key Access</h2>
+                <button class="modal-close" onclick="closeMasterKeyModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <p>Enter the master key to unlock editing for all notes:</p>
+                <input type="password" id="masterKeyInput" placeholder="Enter master key...">
+                <div class="modal-actions">
+                    <button class="btn-primary" onclick="verifyMasterKey()">Unlock</button>
+                    <button class="btn-secondary" onclick="closeMasterKeyModal()">Cancel</button>
+                </div>
+                <p class="master-key-status" id="masterKeyStatus"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div class="modal" id="importModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📥 Import Notes</h2>
+                <button class="modal-close" onclick="closeImportModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <p>Paste your markdown content:</p>
+                <textarea id="importTextarea" placeholder="Paste content here..."></textarea>
+                <div class="modal-actions">
+                    <button class="btn-primary" onclick="importNotes()">Import</button>
+                    <button class="btn-secondary" onclick="closeImportModal()">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Paste Detection Overlay -->
+    <div class="paste-overlay" id="pasteOverlay">
+        <div class="paste-message">
+            <span>📋 Large content detected! Creating new note...</span>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
