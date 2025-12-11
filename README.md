@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 
 ---
 
@@ -10,8 +9,6 @@ and if something breaks, it’s a feature, not a bug.*
 
 ---
 
-=======
->>>>>>> 03642ee (Initial commit: Add Worker, public folder, and project files)
 # 📝 Markdown Notes - ToonTamilIndia
 
 A beautiful, feature-rich Markdown notes application with LaTeX math support, perfect for capturing and organizing notes from ChatGPT and other sources.
