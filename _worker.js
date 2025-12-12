@@ -72,21 +72,6 @@ async function handleAPI(request, env, path) {
     'Content-Type': 'application/json',
   };
   
-  // Timing-safe string comparison to prevent timing attacks
-  function timingSafeEqual(a, b) {
-    if (typeof a !== 'string' || typeof b !== 'string') {
-      return false;
-    }
-    if (a.length !== b.length) {
-      return false;
-    }
-    let result = 0;
-    for (let i = 0; i < a.length; i++) {
-      result |= a.charCodeAt(i) ^ b.charCodeAt(i);
-    }
-    return result === 0;
-  }
-  
   // Check if KV is configured
   if (!env.SHARED_NOTES) {
     return new Response(JSON.stringify({ 
@@ -195,7 +180,7 @@ async function handleAPI(request, env, path) {
     const expectedKey = env.MASTER_KEY || 'ToonTamilIndia';
     
     // Use timing-safe comparison to prevent timing attacks
-    if (!timingSafeEqual(masterKey, expectedKey)) {
+    if (!masterKey || masterKey.length !== expectedKey.length || masterKey !== expectedKey) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
         status: 401, headers: corsHeaders 
       });
@@ -219,7 +204,7 @@ async function handleAPI(request, env, path) {
     const expectedKey = env.MASTER_KEY || 'ToonTamilIndia';
     
     // Use timing-safe comparison to prevent timing attacks
-    if (!timingSafeEqual(masterKey, expectedKey)) {
+    if (!masterKey || masterKey.length !== expectedKey.length || masterKey !== expectedKey) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
         status: 401, headers: corsHeaders 
       });
