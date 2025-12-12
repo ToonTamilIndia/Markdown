@@ -7,3 +7,8 @@ assets = { directory = "public", binding = "ASSETS" }
 kv_namespaces = [
   { binding = "SHARED_NOTES", id = "1868780cbfb64919be0732f89350e47e" }
 ]
+
+# Security: Configure MASTER_KEY as a secret in Cloudflare Workers settings
+# Do NOT hardcode the master key here. Use:
+#   wrangler secret put MASTER_KEY
+# Or set it in the Cloudflare dashboard under Workers > Settings > Variables
