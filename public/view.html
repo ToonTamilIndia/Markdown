@@ -556,9 +556,8 @@
                 </div>
             `;
             
-            // Update page title safely by creating a text node
-            const titleText = note.title ? String(note.title).substring(0, 100) : 'Shared Note';
-            document.title = titleText.replace(/[\x00-\x1F\x7F<>'"&]/g, '') + ' - Markdown Notes';
+            // Update page title (use text content for title, not HTML)
+            document.title = `${note.title.replace(/[<>]/g, '')} - Markdown Notes`;
             
             // Render Mermaid diagrams
             setTimeout(() => {
