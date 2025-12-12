@@ -174,9 +174,9 @@ document.addEventListener('DOMContentLoaded', () => {
         setupMathRendering();
     }
     
-    // Initialize Mermaid with strict security level
+    // Initialize Mermaid
     if (typeof mermaid !== 'undefined') {
-        mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'strict' });
+        mermaid.initialize({ startOnLoad: false, theme: 'dark' });
     }
 });
 
