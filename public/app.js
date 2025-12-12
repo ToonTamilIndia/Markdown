@@ -506,14 +506,6 @@ function updatePreview() {
     // Post-process to restore math blocks
     html = postprocessMath(html);
     
-    // Sanitize HTML output to prevent XSS attacks
-    if (typeof DOMPurify !== 'undefined') {
-        html = DOMPurify.sanitize(html, {
-            ADD_TAGS: ['math', 'mrow', 'mi', 'mn', 'mo', 'msup', 'msub', 'mfrac', 'mroot', 'msqrt', 'mtext', 'mtable', 'mtr', 'mtd', 'mover', 'munder', 'munderover', 'semantics', 'annotation'],
-            ADD_ATTR: ['xmlns', 'mathvariant', 'fence', 'separator', 'stretchy']
-        });
-    }
-    
     previewContainer.innerHTML = html;
 
     // Render math equations with KaTeX
@@ -526,8 +518,8 @@ function updatePreview() {
                 {left: '\\(', right: '\\)', display: false}
             ],
             throwOnError: false,
-            trust: false,
-            strict: "warn",
+            trust: true,
+            strict: false,
             macros: {
                 "\\R": "\\mathbb{R}",
                 "\\N": "\\mathbb{N}",
@@ -2025,15 +2017,6 @@ function showSharedView(sharedNote) {
     let processedContent = preprocessMath(sharedNote.content);
     let html = marked.parse(processedContent);
     html = postprocessMath(html);
-    
-    // Sanitize HTML output to prevent XSS attacks
-    if (typeof DOMPurify !== 'undefined') {
-        html = DOMPurify.sanitize(html, {
-            ADD_TAGS: ['math', 'mrow', 'mi', 'mn', 'mo', 'msup', 'msub', 'mfrac', 'mroot', 'msqrt', 'mtext', 'mtable', 'mtr', 'mtd', 'mover', 'munder', 'munderover', 'semantics', 'annotation'],
-            ADD_ATTR: ['xmlns', 'mathvariant', 'fence', 'separator', 'stretchy']
-        });
-    }
-    
     sharedContent.innerHTML = html;
     
     if (typeof renderMathInElement !== 'undefined') {
@@ -2043,7 +2026,7 @@ function showSharedView(sharedNote) {
                 {left: '$', right: '$', display: false}
             ],
             throwOnError: false,
-            trust: false
+            trust: true
         });
     }
     

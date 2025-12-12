@@ -24,9 +24,6 @@
     <!-- Pako for DEFLATE decompression -->
     <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
     
-    <!-- DOMPurify for HTML sanitization (XSS protection) -->
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.2/dist/purify.min.js"></script>
-    
     <style>
         :root {
             --bg-color: #1a1a2e;
@@ -369,7 +366,7 @@
         mermaid.initialize({
             startOnLoad: false,
             theme: 'dark',
-            securityLevel: 'strict'
+            securityLevel: 'loose'
         });
 
         // Configure Marked
@@ -436,8 +433,8 @@
                     const rendered = katex.renderToString(math, {
                         displayMode: display,
                         throwOnError: false,
-                        trust: false,
-                        strict: "warn",
+                        trust: true,
+                        strict: false,
                         macros: {
                             "\\R": "\\mathbb{R}",
                             "\\N": "\\mathbb{N}",
@@ -449,9 +446,7 @@
                     html = html.replace(placeholder, rendered);
                 } catch (e) {
                     console.error('KaTeX error:', e);
-                    // Escape the math content to prevent XSS
-                    const escapedMath = math.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                    html = html.replace(placeholder, `<code class="math-error">${escapedMath}</code>`);
+                    html = html.replace(placeholder, `<code class="math-error">${math}</code>`);
                 }
             });
             return html;
@@ -467,14 +462,6 @@
             
             // Postprocess math
             html = postprocessMath(html);
-            
-            // Sanitize HTML output to prevent XSS attacks
-            if (typeof DOMPurify !== 'undefined') {
-                html = DOMPurify.sanitize(html, {
-                    ADD_TAGS: ['math', 'mrow', 'mi', 'mn', 'mo', 'msup', 'msub', 'mfrac', 'mroot', 'msqrt', 'mtext', 'mtable', 'mtr', 'mtd', 'mover', 'munder', 'munderover', 'semantics', 'annotation'],
-                    ADD_ATTR: ['xmlns', 'mathvariant', 'fence', 'separator', 'stretchy']
-                });
-            }
             
             return html;
         }
@@ -544,11 +531,10 @@
         // Display note
         function displayNote(note) {
             const renderedContent = renderMarkdown(note.content);
-            const safeTitle = escapeHtml(note.title);
             
             document.getElementById('main-content').innerHTML = `
                 <div class="note-header">
-                    <h1 class="note-title">${safeTitle}</h1>
+                    <h1 class="note-title">${escapeHtml(note.title)}</h1>
                     ${note.sharedAt ? `<p class="note-meta">Shared: ${new Date(note.sharedAt).toLocaleDateString()}</p>` : ''}
                 </div>
                 <div class="note-content" id="note-content">
@@ -556,8 +542,8 @@
                 </div>
             `;
             
-            // Update page title (use text content for title, not HTML)
-            document.title = `${note.title.replace(/[<>]/g, '')} - Markdown Notes`;
+            // Update page title
+            document.title = `${note.title} - Markdown Notes`;
             
             // Render Mermaid diagrams
             setTimeout(() => {
