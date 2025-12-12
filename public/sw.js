@@ -1,5 +1,5 @@
 // Service Worker for Markdown Notes PWA
-const CACHE_NAME = 'md-notes-v3';
+const CACHE_NAME = 'md-notes-v2';
 const urlsToCache = [
     '/',
     '/index.html',
@@ -12,8 +12,7 @@ const urlsToCache = [
     'https://cdn.jsdelivr.net/npm/marked/marked.min.js',
     'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css',
     'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js',
-    'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js',
-    'https://cdn.jsdelivr.net/npm/dompurify@3.2.2/dist/purify.min.js'
+    'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js'
 ];
 
 // Install event
