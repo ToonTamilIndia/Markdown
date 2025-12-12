@@ -160,7 +160,7 @@ async function handleAPI(request, env, path) {
     const alias = path.replace('/api/note/', '');
     const masterKey = request.headers.get('X-Master-Key');
     
-    if (masterKey !== 'ToonTamilIndia') {
+    if (!env.MASTER_KEY || masterKey !== env.MASTER_KEY) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
         status: 401, headers: corsHeaders 
       });
@@ -182,7 +182,7 @@ async function handleAPI(request, env, path) {
   if (path === '/api/list' && request.method === 'GET') {
     const masterKey = request.headers.get('X-Master-Key');
     
-    if (masterKey !== 'ToonTamilIndia') {
+    if (!env.MASTER_KEY || masterKey !== env.MASTER_KEY) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
         status: 401, headers: corsHeaders 
       });

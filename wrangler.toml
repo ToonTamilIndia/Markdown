@@ -7,3 +7,6 @@ assets = { directory = "public", binding = "ASSETS" }
 kv_namespaces = [
   { binding = "SHARED_NOTES", id = "1868780cbfb64919be0732f89350e47e" }
 ]
+
+# Environment variables (set in Cloudflare dashboard):
+# - MASTER_KEY: Secret key for managing shared notes (DELETE and LIST operations)

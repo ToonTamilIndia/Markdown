@@ -27,7 +27,7 @@ A beautiful, feature-rich Markdown notes application with LaTeX math support, pe
 - **📱 Responsive** - Works on desktop, tablet, and mobile
 
 ### Advanced Features
-- **🔑 Master Key** - Use `ToonTamilIndia` to unlock editing for all notes
+- **🔑 Master Key** - Secure master key for managing all notes
 - **🏷️ Custom Aliases** - Create custom URL aliases for easy sharing
 - **📋 Quick Paste** - Paste ChatGPT conversations directly
 - **📤 Export** - Export all notes as JSON
@@ -56,7 +56,7 @@ A beautiful, feature-rich Markdown notes application with LaTeX math support, pe
 
 ### Master Key Access
 - Click **"🔑 Master Key"** in the sidebar
-- Enter: `ToonTamilIndia`
+- Enter your configured master key
 - This grants full editing access to all notes
 
 ### Keyboard Shortcuts
@@ -118,7 +118,7 @@ Markdown/
 
 ## 🔒 Security Note
 
-The master key (`ToonTamilIndia`) provides access to edit all notes stored in the browser's local storage. This is a client-side only application - all data is stored locally in the user's browser.
+The master key provides access to manage all notes stored in the KV storage. For Cloudflare Workers/Pages deployments, configure the `MASTER_KEY` environment variable securely in your Cloudflare dashboard. This is a client-side application - all personal notes are stored locally in the user's browser.
 
 ## 📄 License
 

@@ -18,7 +18,20 @@
    - **KV namespace**: Select the `SHARED_NOTES` namespace you created
 5. Click **Save**
 
-## Step 3: Deploy
+## Step 3: Set Environment Variables
+
+1. Go to **Workers & Pages** → Select your project
+2. Go to **Settings** → **Environment variables**
+3. Click **Add variables**
+4. Add:
+   - **Variable name**: `MASTER_KEY`
+   - **Value**: Your secure master key (use a strong, random password)
+   - **Environment**: Production (or both Production and Preview)
+5. Click **Save**
+
+**Important:** Choose a strong, unique master key and keep it secure. Do not commit it to your repository.
+
+## Step 4: Deploy
 
 1. Deploy your project (push to Git or upload files)
 2. The `_worker.js` file will automatically handle routing
@@ -40,9 +53,11 @@
 
 ## Master Key
 
-The master key `ToonTamilIndia` is required for:
+A secure master key is required for:
 - Viewing all shared notes in the Manage tab
 - Deleting notes from KV storage
+
+Set the `MASTER_KEY` environment variable in your Cloudflare Pages settings (see Step 3 above).
 
 ## API Examples
 
@@ -57,9 +72,9 @@ curl https://markdown.toontamilindia.in/api/note/test
 
 # List all notes (requires master key)
 curl https://markdown.toontamilindia.in/api/list \
-  -H "X-Master-Key: ToonTamilIndia"
+  -H "X-Master-Key: YOUR_MASTER_KEY"
 
 # Delete a note (requires master key)
 curl -X DELETE https://markdown.toontamilindia.in/api/note/test \
-  -H "X-Master-Key: ToonTamilIndia"
+  -H "X-Master-Key: YOUR_MASTER_KEY"
 ```
