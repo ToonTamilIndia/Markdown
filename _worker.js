@@ -82,14 +82,6 @@ async function handleAPI(request, env, path) {
   // POST /api/share - Save a shared note
   if (path === '/api/share' && request.method === 'POST') {
     try {
-      // Limit request body size to prevent DoS (max 1MB)
-      const contentLength = request.headers.get('content-length');
-      if (contentLength && parseInt(contentLength) > 1024 * 1024) {
-        return new Response(JSON.stringify({ error: 'Request body too large (max 1MB)' }), { 
-          status: 413, headers: corsHeaders 
-        });
-      }
-      
       const body = await request.json();
       const { alias, data, title } = body;
       
@@ -106,20 +98,10 @@ async function handleAPI(request, env, path) {
         }), { status: 400, headers: corsHeaders });
       }
       
-      // Validate data is a string and has reasonable size
-      if (typeof data !== 'string' || data.length > 500000) {
-        return new Response(JSON.stringify({ 
-          error: 'Invalid data. Must be a string with max 500KB.' 
-        }), { status: 400, headers: corsHeaders });
-      }
-      
-      // Validate title if provided (prevent XSS through title)
-      const sanitizedTitle = (title || 'Untitled').substring(0, 200).replace(/[<>]/g, '');
-      
       // Store in KV with metadata
       const noteEntry = {
         data: data,
-        title: sanitizedTitle,
+        title: title || 'Untitled',
         createdAt: new Date().toISOString(),
         views: 0
       };
@@ -177,10 +159,8 @@ async function handleAPI(request, env, path) {
   if (path.startsWith('/api/note/') && request.method === 'DELETE') {
     const alias = path.replace('/api/note/', '');
     const masterKey = request.headers.get('X-Master-Key');
-    const expectedKey = env.MASTER_KEY || 'ToonTamilIndia';
     
-    // Use timing-safe comparison to prevent timing attacks
-    if (!masterKey || masterKey.length !== expectedKey.length || masterKey !== expectedKey) {
+    if (masterKey !== 'ToonTamilIndia') {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
         status: 401, headers: corsHeaders 
       });
@@ -201,10 +181,8 @@ async function handleAPI(request, env, path) {
   // GET /api/list - List all shared notes (requires master key)
   if (path === '/api/list' && request.method === 'GET') {
     const masterKey = request.headers.get('X-Master-Key');
-    const expectedKey = env.MASTER_KEY || 'ToonTamilIndia';
     
-    // Use timing-safe comparison to prevent timing attacks
-    if (!masterKey || masterKey.length !== expectedKey.length || masterKey !== expectedKey) {
+    if (masterKey !== 'ToonTamilIndia') {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
         status: 401, headers: corsHeaders 
       });
