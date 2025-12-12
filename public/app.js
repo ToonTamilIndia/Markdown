@@ -527,7 +527,7 @@ function updatePreview() {
             ],
             throwOnError: false,
             trust: false,
-            strict: "warn",
+            strict: false,
             macros: {
                 "\\R": "\\mathbb{R}",
                 "\\N": "\\mathbb{N}",
