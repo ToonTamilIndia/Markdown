@@ -129,7 +129,10 @@ async function handleAPI(request, env, path) {
       }
       
       // Validate title if provided (prevent XSS through title)
-      const sanitizedTitle = (title || 'Untitled').substring(0, 200).replace(/[<>]/g, '');
+      // Remove HTML special characters and control characters
+      const sanitizedTitle = (title || 'Untitled')
+        .substring(0, 200)
+        .replace(/[<>"'&\x00-\x1F\x7F]/g, '');
       
       // Store in KV with metadata
       const noteEntry = {
