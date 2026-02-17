@@ -174,11 +174,106 @@ document.addEventListener('DOMContentLoaded', () => {
         setupMathRendering();
     }
     
-    // Initialize Mermaid
+    // Initialize Mermaid if already loaded
     if (typeof mermaid !== 'undefined') {
-        mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+        mermaid.initialize({ 
+            startOnLoad: false, 
+            theme: 'dark',
+            securityLevel: 'loose',
+            flowchart: { useMaxWidth: true }
+        });
     }
+
+    // Setup resize handle
+    setupResizeHandle();
+
+    // Update stats periodically
+    updateNoteStats();
 });
+
+// ==================== LAZY LOADING ====================
+const _loadedScripts = {};
+function loadScript(url) {
+    if (_loadedScripts[url]) return _loadedScripts[url];
+    _loadedScripts[url] = new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = url;
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
+    });
+    return _loadedScripts[url];
+}
+
+async function ensureMermaid() {
+    if (typeof mermaid !== 'undefined') return;
+    await loadScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js');
+    mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose', flowchart: { useMaxWidth: true } });
+}
+
+async function ensureChartJS() {
+    if (typeof Chart !== 'undefined') return;
+    await loadScript('https://cdn.jsdelivr.net/npm/chart.js');
+}
+
+async function ensurePlotly() {
+    if (typeof Plotly !== 'undefined') return;
+    await loadScript('https://cdn.plot.ly/plotly-2.27.0.min.js');
+}
+
+async function ensureVega() {
+    if (typeof vegaEmbed !== 'undefined') return;
+    await loadScript('https://cdn.jsdelivr.net/npm/vega@5');
+    await loadScript('https://cdn.jsdelivr.net/npm/vega-lite@5');
+    await loadScript('https://cdn.jsdelivr.net/npm/vega-embed@6');
+}
+
+async function ensureViz() {
+    if (typeof Viz !== 'undefined') return;
+    await loadScript('https://unpkg.com/viz.js@2.1.2/viz.js');
+    await loadScript('https://unpkg.com/viz.js@2.1.2/full.render.js');
+}
+
+async function ensurePlantUML() {
+    if (typeof plantumlEncoder !== 'undefined') return;
+    await loadScript('https://cdn.jsdelivr.net/npm/plantuml-encoder@1.4.0/dist/plantuml-encoder.min.js');
+}
+
+// ==================== RESIZE HANDLE ====================
+function setupResizeHandle() {
+    const handle = document.getElementById('resizeHandle');
+    const editorPanel = document.getElementById('editorPanel');
+    const previewPanel = document.getElementById('previewPanel');
+    const container = document.getElementById('editorContainer');
+    if (!handle || !editorPanel || !previewPanel || !container) return;
+
+    let isDragging = false;
+    handle.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        handle.classList.add('active');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+    });
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const rect = container.getBoundingClientRect();
+        const pct = ((e.clientX - rect.left) / rect.width) * 100;
+        if (pct > 15 && pct < 85) {
+            editorPanel.style.flex = 'none';
+            editorPanel.style.width = pct + '%';
+            previewPanel.style.flex = '1';
+        }
+    });
+    document.addEventListener('mouseup', () => {
+        if (isDragging) {
+            isDragging = false;
+            handle.classList.remove('active');
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        }
+    });
+}
 
 // Setup Event Listeners
 function setupEventListeners() {
@@ -449,7 +544,12 @@ function renderNotesList() {
 // Search Notes
 function searchNotes() {
     const query = document.getElementById('searchInput').value.toLowerCase();
-    const container = document.getElementById('notesList');
+    const container = document.getElementById('searchResults') || document.getElementById('notesList');
+
+    if (!query.trim()) {
+        container.innerHTML = '';
+        return;
+    }
 
     const filtered = notes.filter(note => 
         note.title.toLowerCase().includes(query) ||
@@ -536,16 +636,13 @@ function updatePreview() {
     });
     
     // Render Mermaid diagrams
-    if (typeof mermaid !== 'undefined') {
-        previewContainer.querySelectorAll('pre code.language-mermaid').forEach((block, idx) => {
-            const code = block.textContent;
-            const div = document.createElement('div');
-            div.className = 'mermaid';
-            div.textContent = code;
-            block.parentElement.replaceWith(div);
-        });
-        mermaid.init(undefined, previewContainer.querySelectorAll('.mermaid'));
-    }
+    renderMermaidDiagrams(previewContainer);
+    
+    // Render other diagrams (PlantUML, Graphviz, D2, etc.)
+    renderDiagrams(previewContainer);
+    
+    // Render charts (Chart.js, Plotly, Vega-Lite)
+    renderCharts(previewContainer);
     
     // Handle task lists
     previewContainer.querySelectorAll('li').forEach(li => {
@@ -563,6 +660,9 @@ function updatePreview() {
     previewContainer.innerHTML = previewContainer.innerHTML
         .replace(/<p>:::\s*(warning|info|success|danger)\s*<\/p>/gi, '<div class="callout callout-$1">')
         .replace(/<p>:::<\/p>/g, '</div>');
+
+    // Update status bar stats
+    updateNoteStats();
 }
 
 // Preprocess Math Equations
@@ -609,6 +709,296 @@ function postprocessMath(html) {
     return html;
 }
 
+// ==================== DIAGRAM RENDERING FUNCTIONS ====================
+
+// Render Mermaid diagrams
+async function renderMermaidDiagrams(container) {
+    const mermaidBlocks = container.querySelectorAll('pre code.language-mermaid, pre code.mermaid');
+    if (mermaidBlocks.length === 0) return;
+    
+    try {
+        await ensureMermaid();
+    } catch(e) { console.warn('Failed to load Mermaid:', e); return; }
+    
+    try {
+        
+        for (let i = 0; i < mermaidBlocks.length; i++) {
+            const block = mermaidBlocks[i];
+            const code = block.textContent;
+            const pre = block.closest('pre');
+            
+            if (!pre) continue;
+            
+            try {
+                // Create a unique ID for this diagram
+                const id = `mermaid-diagram-${Date.now()}-${i}`;
+                
+                // Create container div
+                const div = document.createElement('div');
+                div.className = 'mermaid-container';
+                div.style.background = 'transparent';
+                div.style.padding = '1rem';
+                div.style.textAlign = 'center';
+                
+                // Render mermaid diagram
+                const { svg } = await mermaid.render(id, code);
+                div.innerHTML = svg;
+                
+                // Replace the pre element
+                pre.replaceWith(div);
+            } catch (err) {
+                console.error('Mermaid rendering error:', err);
+                // Keep the code block if rendering fails
+                pre.innerHTML = `<code class="language-mermaid">${escapeHtml(code)}</code>`;
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'diagram-error';
+                errorDiv.textContent = `⚠️ Mermaid rendering error: ${err.message}`;
+                pre.insertAdjacentElement('afterend', errorDiv);
+            }
+        }
+    } catch (err) {
+        console.error('Error rendering Mermaid diagrams:', err);
+    }
+}
+
+// Render PlantUML diagrams
+async function renderPlantUML(container) {
+    const blocks = container.querySelectorAll('pre code.language-plantuml, pre code.plantuml');
+    if (blocks.length === 0) return;
+    try { await ensurePlantUML(); } catch(e) { console.warn('Failed to load PlantUML encoder:', e); return; }
+    blocks.forEach((block, idx) => {
+        try {
+            const code = block.textContent;
+            const encoded = plantumlEncoder.encode(code);
+            const img = document.createElement('img');
+            img.src = `https://www.plantuml.com/plantuml/svg/${encoded}`;
+            img.alt = 'PlantUML Diagram';
+            img.style.maxWidth = '100%';
+            img.className = 'diagram-image';
+            
+            const container = document.createElement('div');
+            container.className = 'diagram-container';
+            container.appendChild(img);
+            
+            block.parentElement.replaceWith(container);
+        } catch (err) {
+            console.error('PlantUML error:', err);
+        }
+    });
+}
+
+// Render Graphviz diagrams (WASM-based using Viz.js)
+async function renderGraphviz(container) {
+    const graphvizBlocks = container.querySelectorAll('pre code.language-dot, pre code.language-graphviz, pre code.dot, pre code.graphviz');
+    if (graphvizBlocks.length === 0) return;
+    try { await ensureViz(); } catch(e) { console.warn('Failed to load Viz.js:', e); return; }
+    
+    for (const block of graphvizBlocks) {
+        try {
+            const code = block.textContent;
+            const viz = new Viz();
+            const svg = await viz.renderSVGElement(code);
+            
+            const containerDiv = document.createElement('div');
+            containerDiv.className = 'diagram-container';
+            containerDiv.style.textAlign = 'center';
+            containerDiv.appendChild(svg);
+            
+            block.parentElement.replaceWith(containerDiv);
+        } catch (err) {
+            console.error('Graphviz error:', err);
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'diagram-error';
+            errorDiv.textContent = `⚠️ Graphviz error: ${err.message}`;
+            block.parentElement.insertAdjacentElement('afterend', errorDiv);
+        }
+    }
+}
+
+// Render D2 diagrams (using D2 online service)
+function renderD2(container) {
+    container.querySelectorAll('pre code.language-d2, pre code.d2').forEach((block, idx) => {
+        try {
+            const code = block.textContent;
+            // D2 requires server-side rendering, so we'll show a link to d2lang.com playground
+            const encodedCode = encodeURIComponent(code);
+            
+            const div = document.createElement('div');
+            div.className = 'diagram-container d2-placeholder';
+            div.innerHTML = `
+                <div style="padding: 2rem; background: var(--bg-tertiary); border-radius: 8px; text-align: center;">
+                    <p>📊 D2 Diagram (requires server-side rendering)</p>
+                    <pre style="text-align: left; max-height: 200px; overflow: auto;">${escapeHtml(code)}</pre>
+                    <a href="https://play.d2lang.com/?script=${encodedCode}" target="_blank" style="color: var(--accent-primary);">
+                        Open in D2 Playground →
+                    </a>
+                </div>
+            `;
+            
+            block.parentElement.replaceWith(div);
+        } catch (err) {
+            console.error('D2 error:', err);
+        }
+    });
+}
+
+// Render all diagram types
+async function renderDiagrams(container) {
+    // PlantUML (lazy loaded)
+    await renderPlantUML(container);
+    
+    // Graphviz (lazy loaded)
+    await renderGraphviz(container);
+    
+    // D2
+    renderD2(container);
+}
+
+// ==================== CHART RENDERING FUNCTIONS ====================
+
+// Render Chart.js charts
+async function renderChartJS(container) {
+    const blocks = container.querySelectorAll('pre code.language-chartjs, pre code.chartjs');
+    if (blocks.length === 0) return;
+    try { await ensureChartJS(); } catch(e) { console.warn('Failed to load Chart.js:', e); return; }
+    blocks.forEach((block, idx) => {
+        try {
+            const config = JSON.parse(block.textContent);
+            const canvas = document.createElement('canvas');
+            canvas.id = `chart-${Date.now()}-${idx}`;
+            
+            const div = document.createElement('div');
+            div.className = 'chart-container';
+            div.style.maxWidth = '600px';
+            div.style.margin = '1rem auto';
+            div.appendChild(canvas);
+            
+            block.parentElement.replaceWith(div);
+            
+            // Render chart
+            new Chart(canvas, config);
+        } catch (err) {
+            console.error('Chart.js error:', err);
+        }
+    });
+}
+
+// Render Plotly charts
+async function renderPlotly(container) {
+    const blocks = container.querySelectorAll('pre code.language-plotly, pre code.plotly');
+    if (blocks.length === 0) return;
+    try { await ensurePlotly(); } catch(e) { console.warn('Failed to load Plotly:', e); return; }
+    blocks.forEach((block, idx) => {
+        try {
+            const config = JSON.parse(block.textContent);
+            const div = document.createElement('div');
+            div.id = `plotly-${Date.now()}-${idx}`;
+            div.className = 'chart-container';
+            
+            block.parentElement.replaceWith(div);
+            
+            Plotly.newPlot(div.id, config.data || [], config.layout || {}, config.config || {});
+        } catch (err) {
+            console.error('Plotly error:', err);
+        }
+    });
+}
+
+// Render Vega-Lite charts
+async function renderVegaLite(container) {
+    const blocks = container.querySelectorAll('pre code.language-vega-lite, pre code.language-vegalite, pre code.vega-lite');
+    if (blocks.length === 0) return;
+    try { await ensureVega(); } catch(e) { console.warn('Failed to load Vega:', e); return; }
+    blocks.forEach((block, idx) => {
+        try {
+            const spec = JSON.parse(block.textContent);
+            const div = document.createElement('div');
+            div.id = `vega-lite-${Date.now()}-${idx}`;
+            div.className = 'chart-container';
+            
+            block.parentElement.replaceWith(div);
+            
+            vegaEmbed(`#${div.id}`, spec, { theme: 'dark' });
+        } catch (err) {
+            console.error('Vega-Lite error:', err);
+        }
+    });
+}
+
+// Render Vega charts
+async function renderVega(container) {
+    const blocks = container.querySelectorAll('pre code.language-vega, pre code.vega');
+    if (blocks.length === 0) return;
+    try { await ensureVega(); } catch(e) { console.warn('Failed to load Vega:', e); return; }
+    blocks.forEach((block, idx) => {
+        try {
+            const spec = JSON.parse(block.textContent);
+            const div = document.createElement('div');
+            div.id = `vega-${Date.now()}-${idx}`;
+            div.className = 'chart-container';
+            
+            block.parentElement.replaceWith(div);
+            
+            vegaEmbed(`#${div.id}`, spec, { theme: 'dark' });
+        } catch (err) {
+            console.error('Vega error:', err);
+        }
+    });
+}
+
+// Render all chart types
+async function renderCharts(container) {
+    // Chart.js (lazy loaded)
+    await renderChartJS(container);
+    
+    // Plotly (lazy loaded)
+    await renderPlotly(container);
+    
+    // Vega-Lite (lazy loaded)
+    await renderVegaLite(container);
+    
+    // Vega (lazy loaded)
+    await renderVega(container);
+}
+
+// Insert diagram template
+function insertDiagramTemplate(type) {
+    const templates = {
+        plantuml: `\`\`\`plantuml
+@startuml
+Alice -> Bob: Authentication Request
+Bob --> Alice: Authentication Response
+@enduml
+\`\`\``,
+        graphviz: `\`\`\`dot
+digraph G {
+    A -> B;
+    B -> C;
+    C -> A;
+}
+\`\`\``,
+        d2: `\`\`\`d2
+x -> y -> z
+\`\`\``
+    };
+    
+    const template = templates[type] || '';
+    const editor = document.getElementById('markdownEditor');
+    const start = editor.selectionStart;
+    const text = editor.value;
+    
+    editor.value = text.substring(0, start) + '\n' + template + '\n' + text.substring(start);
+    editor.focus();
+    updatePreview();
+}
+
+// Helper function to escape HTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 // Insert Format
 function insertFormat(before, after) {
     const editor = document.getElementById('markdownEditor');
@@ -631,20 +1021,44 @@ function insertFormat(before, after) {
 // Toggle View Mode
 function toggleView() {
     const container = document.getElementById('editorContainer') || document.querySelector('.editor-container');
-    const button = document.getElementById('viewToggle');
     
     if (viewMode === 'split') {
         viewMode = 'preview-only';
         container.className = 'editor-container preview-only';
-        button.textContent = '✏️ Edit';
     } else if (viewMode === 'preview-only') {
         viewMode = 'editor-only';
         container.className = 'editor-container editor-only';
-        button.textContent = '👁️ Preview';
     } else {
         viewMode = 'split';
         container.className = 'editor-container split';
-        button.textContent = '👁️ Preview';
+    }
+}
+
+// Switch sidebar panel (explorer / search)
+function switchPanel(panel) {
+    const explorerPanel = document.getElementById('explorerPanel');
+    const searchPanel = document.getElementById('searchPanel');
+    const sidebar = document.getElementById('sidebar');
+
+    document.querySelectorAll('.activity-btn[data-panel]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.panel === panel);
+    });
+
+    if (explorerPanel) explorerPanel.classList.toggle('hidden', panel !== 'explorer');
+    if (searchPanel) searchPanel.classList.toggle('hidden', panel !== 'search');
+
+    // Make sure sidebar is visible
+    sidebar.classList.remove('collapsed');
+    if (window.innerWidth <= 900) {
+        sidebar.classList.add('open');
+    }
+
+    // Focus search input if switching to search
+    if (panel === 'search') {
+        setTimeout(() => {
+            const input = document.getElementById('searchInput');
+            if (input) input.focus();
+        }, 100);
     }
 }
 
@@ -652,6 +1066,25 @@ function toggleView() {
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     sidebar.classList.toggle('open');
+    
+    // Close sidebar when clicking outside on mobile
+    if (sidebar.classList.contains('open')) {
+        document.addEventListener('click', handleOutsideClick);
+    } else {
+        document.removeEventListener('click', handleOutsideClick);
+    }
+}
+
+// Handle clicks outside sidebar to close it on mobile
+function handleOutsideClick(e) {
+    const sidebar = document.getElementById('sidebar');
+    const menuToggle = document.querySelector('.menu-toggle');
+    
+    // Don't close if clicking on sidebar itself or menu toggle
+    if (!sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
+        sidebar.classList.remove('open');
+        document.removeEventListener('click', handleOutsideClick);
+    }
 }
 
 // Handle Paste (ChatGPT content detection)
@@ -758,25 +1191,19 @@ function verifyMasterKey() {
 }
 
 function updateMasterKeyUI() {
-    const btn = document.querySelector('.master-key-btn');
+    const btn = document.getElementById('masterKeyBtn');
+    if (!btn) return;
+    const label = btn.querySelector('span');
     if (isMasterKeyUnlocked) {
         btn.classList.add('unlocked');
-        btn.textContent = '🔓 Unlocked';
+        if (label) label.textContent = 'Unlocked';
     } else {
         btn.classList.remove('unlocked');
-        btn.textContent = '🔑 Master Key';
+        if (label) label.textContent = 'Master Key';
     }
 }
 
-// Import Modal
-function showImportModal() {
-    document.getElementById('importModal').classList.add('active');
-}
-
-function closeImportModal() {
-    document.getElementById('importModal').classList.remove('active');
-    document.getElementById('importTextarea').value = '';
-}
+// Import Modal (see full implementation at bottom of file)
 
 function importNotes() {
     const content = document.getElementById('importTextarea').value;
@@ -1704,10 +2131,23 @@ function updateNoteStats() {
     const lines = content.split('\n').length;
     const readTime = Math.ceil(words / 200);
     
-    document.getElementById('statWords').textContent = words.toLocaleString();
-    document.getElementById('statChars').textContent = chars.toLocaleString();
-    document.getElementById('statLines').textContent = lines.toLocaleString();
-    document.getElementById('statReadTime').textContent = readTime;
+    // Status bar stats
+    const sw = document.getElementById('statWords');
+    const sc = document.getElementById('statChars');
+    const sl = document.getElementById('statLines');
+    if (sw) sw.textContent = words.toLocaleString();
+    if (sc) sc.textContent = chars.toLocaleString();
+    if (sl) sl.textContent = lines.toLocaleString();
+
+    // Modal stats
+    const swm = document.getElementById('statWordsModal');
+    const scm = document.getElementById('statCharsModal');
+    const slm = document.getElementById('statLinesModal');
+    const srt = document.getElementById('statReadTime');
+    if (swm) swm.textContent = words.toLocaleString();
+    if (scm) scm.textContent = chars.toLocaleString();
+    if (slm) slm.textContent = lines.toLocaleString();
+    if (srt) srt.textContent = readTime;
 }
 
 // Settings Functions
@@ -2036,7 +2476,7 @@ function showSharedView(sharedNote) {
     });
     
     document.getElementById('sharedView').classList.remove('hidden');
-    document.querySelector('.app-container').style.display = 'none';
+    document.querySelector('.app-shell').style.display = 'none';
 }
 
 function showEmbedView(sharedNote) {
@@ -2076,7 +2516,7 @@ function copySharedNote() {
 
 function exitSharedView() {
     document.getElementById('sharedView').classList.add('hidden');
-    document.querySelector('.app-container').style.display = 'flex';
+    document.querySelector('.app-shell').style.display = 'flex';
     history.replaceState(null, '', window.location.pathname);
 }
 

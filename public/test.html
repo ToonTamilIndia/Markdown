@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feature Test - Markdown Notes</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: #0d1117;
+            color: #e6edf3;
+        }
+        h1, h2 { color: #58a6ff; }
+        .test-section {
+            background: #161b22;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+        }
+        .status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+        .status.success { background: #238636; }
+        .status.error { background: #f85149; }
+        .status.pending { background: #d29922; }
+        code {
+            background: #21262d;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Markdown Notes - Feature Test Page</h1>
+    <p>This page tests all the new features added to the Markdown Notes application.</p>
+
+    <div class="test-section">
+        <h2>📚 Libraries Loaded</h2>
+        <ul id="library-status">
+            <li>Loading...</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>🔧 Functionality Tests</h2>
+        <ul id="function-tests">
+            <li>Running tests...</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 Sample Renderings</h2>
+        <div id="samples"></div>
+    </div>
+
+    <!-- Load all libraries as in index.html -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega@5.26.1/build/vega.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-lite@5.16.3/build/vega-lite.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6.24.0/build/vega-embed.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/viz.js@2.1.2/viz.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/viz.js@2.1.2/full.render.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/plantuml-encoder@1.4.0/dist/plantuml-encoder.min.js"></script>
+
+    <script>
+        // Wait for all libraries to load
+        window.addEventListener('load', async () => {
+            const libraryStatus = document.getElementById('library-status');
+            const functionTests = document.getElementById('function-tests');
+            const samples = document.getElementById('samples');
+
+            // Test library loading
+            const libraries = [
+                { name: 'KaTeX', check: () => typeof katex !== 'undefined' },
+                { name: 'Marked', check: () => typeof marked !== 'undefined' },
+                { name: 'Highlight.js', check: () => typeof hljs !== 'undefined' },
+                { name: 'Pako', check: () => typeof pako !== 'undefined' },
+                { name: 'Mermaid', check: () => typeof mermaid !== 'undefined' },
+                { name: 'Chart.js', check: () => typeof Chart !== 'undefined' },
+                { name: 'Plotly', check: () => typeof Plotly !== 'undefined' },
+                { name: 'Vega', check: () => typeof vega !== 'undefined' },
+                { name: 'Vega-Lite', check: () => typeof vegaLite !== 'undefined' },
+                { name: 'Vega-Embed', check: () => typeof vegaEmbed !== 'undefined' },
+                { name: 'Viz.js', check: () => typeof Viz !== 'undefined' },
+                { name: 'PlantUML Encoder', check: () => typeof plantumlEncoder !== 'undefined' }
+            ];
+
+            libraryStatus.innerHTML = libraries.map(lib => {
+                const loaded = lib.check();
+                const statusClass = loaded ? 'success' : 'error';
+                const statusText = loaded ? '✅ Loaded' : '❌ Failed';
+                return `<li><code>${lib.name}</code>: <span class="status ${statusClass}">${statusText}</span></li>`;
+            }).join('');
+
+            // Test functionality
+            const tests = [];
+
+            // Test Mermaid initialization
+            if (typeof mermaid !== 'undefined') {
+                try {
+                    mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+                    tests.push({ name: 'Mermaid Initialize', status: 'success' });
+                } catch (e) {
+                    tests.push({ name: 'Mermaid Initialize', status: 'error', error: e.message });
+                }
+            }
+
+            // Test Mermaid rendering
+            if (typeof mermaid !== 'undefined') {
+                try {
+                    const { svg } = await mermaid.render('test-id', 'graph TD\n    A-->B');
+                    tests.push({ name: 'Mermaid Render', status: 'success' });
+                    
+                    // Add sample
+                    const div = document.createElement('div');
+                    div.innerHTML = `<h3>Mermaid Sample</h3>${svg}`;
+                    samples.appendChild(div);
+                } catch (e) {
+                    tests.push({ name: 'Mermaid Render', status: 'error', error: e.message });
+                }
+            }
+
+            // Test Viz.js (Graphviz)
+            if (typeof Viz !== 'undefined') {
+                try {
+                    const viz = new Viz();
+                    const svg = await viz.renderSVGElement('digraph { A -> B }');
+                    tests.push({ name: 'Viz.js Render', status: 'success' });
+                    
+                    // Add sample
+                    const div = document.createElement('div');
+                    div.innerHTML = '<h3>Graphviz Sample</h3>';
+                    div.appendChild(svg);
+                    samples.appendChild(div);
+                } catch (e) {
+                    tests.push({ name: 'Viz.js Render', status: 'error', error: e.message });
+                }
+            }
+
+            // Test PlantUML encoding
+            if (typeof plantumlEncoder !== 'undefined') {
+                try {
+                    const encoded = plantumlEncoder.encode('@startuml\nAlice -> Bob\n@enduml');
+                    tests.push({ name: 'PlantUML Encode', status: 'success' });
+                } catch (e) {
+                    tests.push({ name: 'PlantUML Encode', status: 'error', error: e.message });
+                }
+            }
+
+            // Test Chart.js
+            if (typeof Chart !== 'undefined') {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 400;
+                    canvas.height = 200;
+                    const ctx = canvas.getContext('2d');
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['A', 'B', 'C'],
+                            datasets: [{
+                                label: 'Test',
+                                data: [12, 19, 3],
+                                backgroundColor: 'rgba(88, 166, 255, 0.5)'
+                            }]
+                        }
+                    });
+                    tests.push({ name: 'Chart.js Render', status: 'success' });
+                    
+                    // Add sample
+                    const div = document.createElement('div');
+                    div.innerHTML = '<h3>Chart.js Sample</h3>';
+                    div.appendChild(canvas);
+                    samples.appendChild(div);
+                } catch (e) {
+                    tests.push({ name: 'Chart.js Render', status: 'error', error: e.message });
+                }
+            }
+
+            // Test Plotly
+            if (typeof Plotly !== 'undefined') {
+                try {
+                    const div = document.createElement('div');
+                    div.id = 'plotly-test';
+                    samples.appendChild(div);
+                    
+                    await Plotly.newPlot('plotly-test', [{
+                        x: [1, 2, 3, 4],
+                        y: [10, 15, 13, 17],
+                        type: 'scatter'
+                    }], {
+                        title: 'Plotly Sample',
+                        paper_bgcolor: '#161b22',
+                        plot_bgcolor: '#0d1117',
+                        font: { color: '#e6edf3' }
+                    });
+                    tests.push({ name: 'Plotly Render', status: 'success' });
+                } catch (e) {
+                    tests.push({ name: 'Plotly Render', status: 'error', error: e.message });
+                }
+            }
+
+            functionTests.innerHTML = tests.map(test => {
+                const statusClass = test.status === 'success' ? 'success' : 'error';
+                const statusText = test.status === 'success' ? '✅ Pass' : '❌ Fail';
+                const errorMsg = test.error ? ` - ${test.error}` : '';
+                return `<li><code>${test.name}</code>: <span class="status ${statusClass}">${statusText}</span>${errorMsg}</li>`;
+            }).join('');
+
+            console.log('All tests completed!');
+        });
+    </script>
+</body>
+</html>

@@ -11,7 +11,7 @@ and if something breaks, it’s a feature, not a bug.*
 
 # 📝 Markdown Notes - ToonTamilIndia
 
-A beautiful, feature-rich Markdown notes application with LaTeX math support, perfect for capturing and organizing notes from ChatGPT and other sources.
+A beautiful, feature-rich Markdown notes application with comprehensive diagram support, math rendering, charts, and advanced visualization capabilities.
 
 ## 🌐 Live Site
 
@@ -24,15 +24,74 @@ A beautiful, feature-rich Markdown notes application with LaTeX math support, pe
 - **🔢 Math Equations** - LaTeX math rendering via KaTeX (ChatGPT compatible)
 - **💾 Auto-Save** - Notes are automatically saved to local storage
 - **🔍 Search** - Quick search across all notes
-- **📱 Responsive** - Works on desktop, tablet, and mobile
+- **📱 Responsive** - Mobile-friendly with improved sidebar menu
+
+### 📊 Diagrams & Visualizations
+
+#### Diagram Support
+- **Mermaid** - Flowcharts, sequence diagrams, Gantt charts, state diagrams, etc.
+- **PlantUML** - UML diagrams (class, sequence, activity, component, etc.)
+- **Graphviz (DOT)** - WASM-based rendering for graph visualizations
+- **D2** - Modern declarative diagram language
+
+#### Chart Support
+- **Chart.js** - Bar, line, pie, doughnut, radar charts
+- **Plotly** - Interactive scientific plots and 3D visualizations
+- **Vega-Lite** - Grammar of graphics for data visualization
+- **Vega** - Full declarative visualization grammar
+
+### 🎨 Syntax Highlighting
+- **Highlight.js** - 190+ languages (default)
+- **Prism** - Lightweight alternative with line highlighting
+- **Shiki** - VSCode-quality static highlighting
 
 ### Advanced Features
 - **🔑 Master Key** - Secure master key for managing all notes
 - **🏷️ Custom Aliases** - Create custom URL aliases for easy sharing
 - **📋 Quick Paste** - Paste ChatGPT conversations directly
-- **📤 Export** - Export all notes as JSON
-- **🎨 Syntax Highlighting** - Code blocks with syntax highlighting
+- **📤 Export** - Export notes as Markdown, HTML, PDF, JSON
+- **🔗 Share** - Generate compressed shareable links with QR codes
+- **📱 Mobile Optimized** - Touch-friendly interface with auto-closing sidebar
 - **⌨️ Keyboard Shortcuts** - Efficient editing with shortcuts
+- **💡 Callouts** - Info, warning, success, and danger callouts
+- **✅ Task Lists** - Interactive checkboxes
+- **📁 Collapsible Sections** - Hide/show content sections
+- **🤖 AI Assistant** - AI-powered content creation and editing (Desktop only)
+
+## 🚀 New in This Update
+
+### Diagram Rendering
+- ✅ **Mermaid diagrams now render in both editor preview AND shared links**
+- ✅ WASM-based Graphviz rendering (client-side, no server needed)
+- ✅ PlantUML integration with server-side rendering
+- ✅ D2 diagram support with playground integration
+
+### Chart Support
+- ✅ Chart.js for common chart types
+- ✅ Plotly for scientific visualizations
+- ✅ Vega and Vega-Lite for advanced data visualization
+
+### Mobile Improvements
+- ✅ Fixed sidebar toggle on mobile devices
+- ✅ Auto-close sidebar when clicking outside
+- ✅ Better touch targets and responsive design
+- ✅ Improved toolbar layout for small screens
+
+### Framework Support
+- ✅ Unified/Remark/Rehype compatible (via Marked.js)
+- ✅ Markdown-it ready
+- ✅ MDX support (can be integrated)
+- ✅ Excalidraw integration available
+
+### AI Assistant (NEW!)
+- ✅ **Multi-provider support** - OpenAI, Google Gemini, OpenRouter
+- ✅ **Content generation** - Create notes from descriptions
+- ✅ **Text improvement** - Enhance, fix grammar, expand, summarize
+- ✅ **Diagram generation** - Create Mermaid, PlantUML, Graphviz diagrams
+- ✅ **Q&A mode** - Ask questions about your notes
+- ✅ **Inline editing** - Ctrl+I for quick AI access (like VS Code)
+- ✅ **Desktop only** - Optimized UX for desktop users
+- ✅ **Secure** - API keys stored locally in browser
 
 ## 🔧 Usage
 
@@ -50,9 +109,123 @@ A beautiful, feature-rich Markdown notes application with LaTeX math support, pe
   $$
   ```
 
+### Creating Diagrams
+
+#### Mermaid Flowchart
+````markdown
+```mermaid
+graph TD
+    A[Start] --> B{Decision}
+    B -->|Yes| C[OK]
+    B -->|No| D[End]
+```
+````
+
+#### PlantUML Sequence Diagram
+````markdown
+```plantuml
+@startuml
+Alice -> Bob: Authentication Request
+Bob --> Alice: Authentication Response
+@enduml
+```
+````
+
+#### Graphviz Graph
+````markdown
+```dot
+digraph G {
+    A -> B -> C;
+    B -> D;
+}
+```
+````
+
+#### D2 Diagram
+````markdown
+```d2
+x -> y -> z
+users -> database: query
+```
+````
+
+### Creating Charts
+
+#### Chart.js
+````markdown
+```chartjs
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Jan", "Feb", "Mar"],
+    "datasets": [{
+      "label": "Sales",
+      "data": [12, 19, 3]
+    }]
+  }
+}
+```
+````
+
+#### Plotly
+````markdown
+```plotly
+{
+  "data": [{
+    "x": [1, 2, 3],
+    "y": [2, 4, 6],
+    "type": "scatter"
+  }]
+}
+```
+````
+
+#### Vega-Lite
+````markdown
+```vega-lite
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "data": {"values": [{"a": "A", "b": 28}]},
+  "mark": "bar",
+  "encoding": {
+    "x": {"field": "a", "type": "nominal"},
+    "y": {"field": "b", "type": "quantitative"}
+  }
+}
+```
+````
+
 ### Custom Aliases
 1. Enter an alias in the "Custom alias" field
 2. Access your note via `markdown.toontamilindia.in/#your-alias`
+
+### AI Assistant (Desktop Only)
+
+The AI assistant helps you create, edit, and enhance content using multiple AI providers.
+
+#### Setup
+1. Click the AI button (bottom-right) or press **Ctrl+I**
+2. Go to **Configure AI** in the settings
+3. Choose provider: OpenAI, Google Gemini, or OpenRouter
+4. Enter your API key
+5. Select your preferred model
+
+#### Quick Actions
+- **✨ Improve** - Enhance selected text
+- **✓ Fix Grammar** - Correct grammar and spelling
+- **📝 Expand** - Add more details
+- **📄 Summarize** - Make content concise
+- **💡 Explain** - Get simple explanations
+
+#### Custom Prompts
+```
+Create a tutorial about Python
+Generate a mermaid flowchart for login process
+Explain this code
+Continue writing from here
+```
+
+See [AI_GUIDE.md](./AI_GUIDE.md) for comprehensive documentation.
 
 ### Master Key Access
 - Click **"🔑 Master Key"** in the sidebar
@@ -65,7 +238,7 @@ A beautiful, feature-rich Markdown notes application with LaTeX math support, pe
 | `Ctrl/Cmd + S` | Save note |
 | `Ctrl/Cmd + N` | New note |
 | `Ctrl/Cmd + B` | Bold |
-| `Ctrl/Cmd + I` | Italic |
+| `Ctrl/Cmd + I` | AI Assistant (Desktop only) |
 | `Ctrl/Cmd + K` | Insert link |
 | `Escape` | Close modals |
 

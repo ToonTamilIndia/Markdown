@@ -3,725 +3,640 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shared Note - Markdown Notes</title>
-    
-    <!-- KaTeX for Math -->
+    <title>Shared Note — Markdown Notes</title>
+
+    <!-- Only essential libs synchronous -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/mhchem.min.js"></script>
-    
-    <!-- Marked for Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    
-    <!-- Highlight.js for code -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    
-    <!-- Mermaid for diagrams -->
-    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-    
-    <!-- Pako for DEFLATE decompression -->
     <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
-    
+
+    <!-- Heavy libs lazy-loaded only when content needs them -->
+
     <style>
         :root {
-            --bg-color: #1a1a2e;
-            --text-color: #eaeaea;
-            --accent-color: #7c3aed;
-            --secondary-bg: #16213e;
-            --border-color: #0f3460;
-            --code-bg: #0d1117;
-            --success-color: #10b981;
-            --warning-color: #f59e0b;
-            --error-color: #ef4444;
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #252526;
+            --bg-tertiary: #2d2d2d;
+            --bg-hover: #2a2d2e;
+            --bg-input: #3c3c3c;
+            --text-primary: #cccccc;
+            --text-secondary: #969696;
+            --text-muted: #6a6a6a;
+            --accent-primary: #0078d4;
+            --accent-secondary: #3fb950;
+            --accent-danger: #f85149;
+            --border-color: #3c3c3c;
+            --radius: 6px;
+            --radius-sm: 3px;
         }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(121,121,121,.4); }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(121,121,121,.7); }
 
         body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background: var(--bg-color);
-            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
             line-height: 1.6;
             min-height: 100vh;
         }
 
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-
-        header {
+        /* Header */
+        .view-header {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
+            justify-content: space-between;
+            padding: 0 24px;
+            height: 48px;
+            background: var(--bg-secondary);
             border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: var(--accent-color);
-            text-decoration: none;
-        }
-
-        .logo:hover {
-            opacity: 0.8;
-        }
-
-        .actions {
+        .view-logo {
             display: flex;
-            gap: 0.5rem;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 600;
         }
-
-        .btn {
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 8px;
+        .view-logo:hover { color: var(--accent-primary); }
+        .view-logo svg { color: var(--accent-primary); }
+        .view-actions { display: flex; gap: 6px; }
+        .view-btn {
+            padding: 5px 14px;
+            border-radius: var(--radius-sm);
             cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.2s;
+            font-size: 13px;
+            font-family: inherit;
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 6px;
+            transition: all .15s;
+            text-decoration: none;
         }
-
-        .btn-primary {
-            background: var(--accent-color);
-            color: white;
+        .view-btn-primary {
+            background: var(--accent-primary);
+            color: #fff;
+            border: none;
         }
-
-        .btn-primary:hover {
-            background: #6d28d9;
-        }
-
-        .btn-secondary {
-            background: var(--secondary-bg);
-            color: var(--text-color);
+        .view-btn-primary:hover { background: #1a8cdb; }
+        .view-btn-secondary {
+            background: transparent;
+            color: var(--text-primary);
             border: 1px solid var(--border-color);
         }
+        .view-btn-secondary:hover { background: var(--bg-hover); border-color: var(--accent-primary); }
 
-        .btn-secondary:hover {
-            background: var(--border-color);
+        /* Container */
+        .view-container {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 32px 24px;
         }
 
-        .note-header {
-            margin-bottom: 2rem;
-        }
+        .note-header { margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color); }
+        .note-title { font-size: 1.8rem; font-weight: 600; color: #e0e0e0; margin-bottom: 6px; }
+        .note-meta { color: var(--text-muted); font-size: 12px; display: flex; gap: 12px; }
 
-        .note-title {
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-            color: var(--text-color);
-        }
+        /* Note Content (mirrors preview-content from main app) */
+        .note-content { color: var(--text-primary); line-height: 1.6; font-size: 15px; }
 
-        .note-meta {
-            color: #888;
-            font-size: 0.9rem;
-        }
-
-        .note-content {
-            background: var(--secondary-bg);
-            border-radius: 12px;
-            padding: 2rem;
-            border: 1px solid var(--border-color);
-        }
-
-        /* Markdown content styles */
         .note-content h1, .note-content h2, .note-content h3,
         .note-content h4, .note-content h5, .note-content h6 {
-            margin: 1.5rem 0 0.75rem;
-            color: var(--text-color);
+            margin: 20px 0 10px; font-weight: 600; color: #e0e0e0; line-height: 1.3;
         }
+        .note-content h1 { font-size: 2em; border-bottom: 1px solid var(--border-color); padding-bottom: .3em; }
+        .note-content h2 { font-size: 1.5em; border-bottom: 1px solid var(--border-color); padding-bottom: .3em; }
+        .note-content h3 { font-size: 1.25em; }
 
-        .note-content h1 { font-size: 1.8rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; }
-        .note-content h2 { font-size: 1.5rem; }
-        .note-content h3 { font-size: 1.3rem; }
-
-        .note-content p {
-            margin: 1rem 0;
-        }
-
-        .note-content a {
-            color: var(--accent-color);
-            text-decoration: none;
-        }
-
-        .note-content a:hover {
-            text-decoration: underline;
-        }
-
-        .note-content ul, .note-content ol {
-            margin: 1rem 0;
-            padding-left: 2rem;
-        }
-
-        .note-content li {
-            margin: 0.5rem 0;
-        }
-
-        .note-content blockquote {
-            border-left: 4px solid var(--accent-color);
-            margin: 1rem 0;
-            padding: 0.5rem 1rem;
-            background: rgba(124, 58, 237, 0.1);
-            border-radius: 0 8px 8px 0;
-        }
+        .note-content p { margin: 0 0 14px; }
+        .note-content a { color: #4fc1ff; text-decoration: none; }
+        .note-content a:hover { text-decoration: underline; }
+        .note-content strong { font-weight: 600; }
 
         .note-content code {
-            font-family: 'Fira Code', 'Consolas', monospace;
-            background: var(--code-bg);
-            padding: 0.2rem 0.4rem;
-            border-radius: 4px;
-            font-size: 0.9em;
+            background: var(--bg-tertiary);
+            padding: .2em .4em;
+            border-radius: 3px;
+            font-family: 'Cascadia Code', Consolas, monospace;
+            font-size: .88em;
         }
-
         .note-content pre {
-            background: var(--code-bg);
-            padding: 1rem;
-            border-radius: 8px;
-            overflow-x: auto;
-            margin: 1rem 0;
-        }
-
-        .note-content pre code {
-            background: none;
-            padding: 0;
-        }
-
-        .note-content table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 1rem 0;
-        }
-
-        .note-content th, .note-content td {
+            background: var(--bg-primary);
             border: 1px solid var(--border-color);
-            padding: 0.75rem;
-            text-align: left;
-        }
-
-        .note-content th {
-            background: var(--code-bg);
-        }
-
-        .note-content img {
-            max-width: 100%;
-            border-radius: 8px;
-        }
-
-        .note-content hr {
-            border: none;
-            border-top: 1px solid var(--border-color);
-            margin: 2rem 0;
-        }
-
-        /* Math styles */
-        .katex-display {
+            padding: 14px 16px;
+            border-radius: var(--radius);
             overflow-x: auto;
-            overflow-y: hidden;
-            padding: 1rem 0;
+            margin: 14px 0;
         }
+        .note-content pre code { background: none; padding: 0; font-size: .9em; line-height: 1.5; }
 
-        .katex {
-            font-size: 1.1em;
+        .note-content blockquote {
+            border-left: 3px solid var(--accent-primary);
+            padding: 4px 16px;
+            margin: 14px 0;
+            color: var(--text-secondary);
         }
+        .note-content ul, .note-content ol { padding-left: 1.8em; margin: 0 0 14px; }
+        .note-content li { margin: 3px 0; }
 
-        /* Task lists */
-        .note-content input[type="checkbox"] {
-            margin-right: 0.5rem;
-        }
+        .note-content table { width: 100%; border-collapse: collapse; margin: 14px 0; }
+        .note-content th, .note-content td { border: 1px solid var(--border-color); padding: 8px 12px; }
+        .note-content th { background: var(--bg-tertiary); font-weight: 600; }
+        .note-content tr:nth-child(even) { background: rgba(255,255,255,.03); }
 
-        /* Error state */
-        .error-container {
-            text-align: center;
-            padding: 4rem 2rem;
-        }
+        .note-content hr { border: none; border-top: 1px solid var(--border-color); margin: 20px 0; }
+        .note-content img { max-width: 100%; border-radius: var(--radius); }
 
-        .error-icon {
-            font-size: 4rem;
-            margin-bottom: 1rem;
-        }
+        .note-content .katex-display { margin: 14px 0; overflow-x: auto; }
+        .note-content .math-display { text-align: center; margin: 16px 0; overflow-x: auto; padding: 8px 0; }
+        .note-content .katex { font-size: 1.1em; }
+        .note-content input[type="checkbox"] { margin-right: 6px; accent-color: var(--accent-primary); }
+        .note-content .task-list-item { list-style: none; margin-left: -1.5em; }
 
-        .error-title {
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
-            color: var(--error-color);
-        }
+        .note-content .callout { padding: 12px 16px; border-radius: var(--radius); margin: 14px 0; border-left: 3px solid; }
+        .note-content .callout-warning { background: rgba(204,167,0,.08); border-color: #cca700; }
+        .note-content .callout-info { background: rgba(0,120,212,.08); border-color: var(--accent-primary); }
+        .note-content .callout-success { background: rgba(63,185,80,.08); border-color: var(--accent-secondary); }
+        .note-content .callout-danger { background: rgba(248,81,73,.08); border-color: var(--accent-danger); }
 
-        .error-message {
-            color: #888;
-            margin-bottom: 2rem;
+        /* Diagrams & Charts */
+        .mermaid-container, .diagram-container, .chart-container {
+            margin: 14px 0; padding: 12px; background: var(--bg-tertiary); border-radius: var(--radius); overflow-x: auto;
         }
+        .mermaid-container svg, .diagram-container svg { max-width: 100%; height: auto; }
+        .diagram-image { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+        .diagram-error { padding: 10px; margin: 10px 0; background: rgba(248,81,73,.08); border-left: 3px solid var(--accent-danger); color: var(--accent-danger); border-radius: var(--radius); font-size: 12px; }
+        .chart-container canvas { max-width: 100%; height: auto !important; }
+        .mermaid { background: transparent; text-align: center; }
+        .mermaid svg { max-width: 100%; height: auto; }
+        .d2-placeholder { background: var(--bg-tertiary); border: 1px solid var(--border-color); }
 
-        /* Loading state */
-        .loading {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 300px;
-        }
+        /* States */
+        .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; gap: 12px; }
+        .loading-spinner { width: 32px; height: 32px; border: 2px solid var(--border-color); border-top-color: var(--accent-primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { color: var(--text-muted); font-size: 13px; }
 
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid var(--border-color);
-            border-top-color: var(--accent-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .loading-text {
-            margin-top: 1rem;
-            color: #888;
-        }
+        .error-container { text-align: center; padding: 60px 24px; }
+        .error-icon { margin-bottom: 12px; }
+        .error-title { font-size: 18px; margin-bottom: 8px; color: var(--accent-danger); }
+        .error-message { color: var(--text-secondary); margin-bottom: 20px; font-size: 13px; }
 
         /* Footer */
-        footer {
-            text-align: center;
-            padding: 2rem;
-            color: #666;
-            font-size: 0.9rem;
-        }
+        .view-footer { text-align: center; padding: 24px; color: var(--text-muted); font-size: 12px; border-top: 1px solid var(--border-color); margin-top: 40px; }
+        .view-footer a { color: var(--accent-primary); text-decoration: none; }
+        .view-footer a:hover { text-decoration: underline; }
 
-        footer a {
-            color: var(--accent-color);
-            text-decoration: none;
-        }
+        /* Status Bar */
+        .view-status { height: 22px; display: flex; align-items: center; padding: 0 12px; background: var(--accent-primary); color: #fff; font-size: 12px; position: fixed; bottom: 0; left: 0; right: 0; z-index: 5; }
 
-        footer a:hover {
-            text-decoration: underline;
+        /* Print */
+        @media print {
+            .view-header, .view-status { display: none !important; }
+            body { background: #fff !important; color: #000 !important; }
+            .note-content { max-width: 100% !important; }
         }
 
         /* Responsive */
         @media (max-width: 768px) {
-            .container {
-                padding: 1rem;
-            }
-
-            header {
-                flex-direction: column;
-                gap: 1rem;
-                text-align: center;
-            }
-
-            .note-title {
-                font-size: 1.5rem;
-            }
-
-            .note-content {
-                padding: 1rem;
-            }
-        }
-
-        /* Mermaid diagrams */
-        .mermaid {
-            background: transparent;
-            text-align: center;
-            margin: 1rem 0;
+            .view-container { padding: 20px 16px; }
+            .note-title { font-size: 1.4rem; }
+            .view-header { padding: 0 12px; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <a href="/" class="logo">📝 Markdown Notes</a>
-            <div class="actions">
-                <button class="btn btn-secondary" onclick="copyContent()">
-                    📋 Copy
-                </button>
-                <a href="/" class="btn btn-primary">
-                    ✏️ Create Note
-                </a>
-            </div>
-        </header>
+    <header class="view-header">
+        <a href="/" class="view-logo">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            Markdown Notes
+        </a>
+        <div class="view-actions">
+            <button class="view-btn view-btn-secondary" onclick="copyContent()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                Copy
+            </button>
+            <a href="/" class="view-btn view-btn-primary">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                Create Note
+            </a>
+        </div>
+    </header>
 
+    <div class="view-container">
         <main id="main-content">
             <div class="loading">
-                <div class="spinner"></div>
+                <div class="loading-spinner"></div>
                 <p class="loading-text">Loading shared note...</p>
             </div>
         </main>
 
-        <footer>
-            <p>Powered by <a href="/">Markdown Notes</a> | Hosted at <a href="https://markdown.toontamilindia.in">markdown.toontamilindia.in</a></p>
+        <footer class="view-footer">
+            Powered by <a href="/">Markdown Notes</a> · <a href="https://markdown.toontamilindia.in">markdown.toontamilindia.in</a>
         </footer>
     </div>
 
+    <div class="view-status">
+        <span id="viewStatusText">Shared Note</span>
+    </div>
+
     <script>
-        // Initialize Mermaid
-        mermaid.initialize({
-            startOnLoad: false,
-            theme: 'dark',
-            securityLevel: 'loose'
+    // ==================== Lazy Script Loader ====================
+    const _loaded = {};
+    function loadScript(url) {
+        if (_loaded[url]) return _loaded[url];
+        _loaded[url] = new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = url; s.onload = resolve; s.onerror = reject;
+            document.head.appendChild(s);
         });
+        return _loaded[url];
+    }
 
-        // Configure Marked
-        marked.setOptions({
-            gfm: true,
-            breaks: true,
-            highlight: function(code, lang) {
-                if (lang && hljs.getLanguage(lang)) {
-                    try {
-                        return hljs.highlight(code, { language: lang }).value;
-                    } catch (e) {}
-                }
-                return hljs.highlightAuto(code).value;
-            }
-        });
+    async function ensureMermaid() {
+        if (typeof mermaid !== 'undefined') return;
+        await loadScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js');
+        mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose', flowchart: { useMaxWidth: true } });
+    }
+    async function ensureChartJS() { if (typeof Chart !== 'undefined') return; await loadScript('https://cdn.jsdelivr.net/npm/chart.js'); }
+    async function ensurePlotly() { if (typeof Plotly !== 'undefined') return; await loadScript('https://cdn.plot.ly/plotly-2.27.0.min.js'); }
+    async function ensureVega() {
+        if (typeof vegaEmbed !== 'undefined') return;
+        await loadScript('https://cdn.jsdelivr.net/npm/vega@5');
+        await loadScript('https://cdn.jsdelivr.net/npm/vega-lite@5');
+        await loadScript('https://cdn.jsdelivr.net/npm/vega-embed@6');
+    }
+    async function ensureViz() {
+        if (typeof Viz !== 'undefined') return;
+        await loadScript('https://unpkg.com/viz.js@2.1.2/viz.js');
+        await loadScript('https://unpkg.com/viz.js@2.1.2/full.render.js');
+    }
+    async function ensurePlantUML() {
+        if (typeof plantumlEncoder !== 'undefined') return;
+        await loadScript('https://cdn.jsdelivr.net/npm/plantuml-encoder@1.4.0/dist/plantuml-encoder.min.js');
+    }
 
-        // Math placeholders storage
-        let mathPlaceholders = [];
-
-        // Preprocess math before markdown parsing
-        function preprocessMath(content) {
-            mathPlaceholders = [];
-            let counter = 0;
-            
-            // Protect display math ($$...$$)
-            content = content.replace(/\$\$([\s\S]*?)\$\$/g, (match, math) => {
-                const placeholder = `%%MATH_DISPLAY_${counter}%%`;
-                mathPlaceholders.push({ placeholder, math: math.trim(), display: true });
-                counter++;
-                return placeholder;
-            });
-            
-            // Protect inline math ($...$)
-            content = content.replace(/\$([^\$\n]+?)\$/g, (match, math) => {
-                const placeholder = `%%MATH_INLINE_${counter}%%`;
-                mathPlaceholders.push({ placeholder, math: math.trim(), display: false });
-                counter++;
-                return placeholder;
-            });
-            
-            // Protect \[...\] display math
-            content = content.replace(/\\\[([\s\S]*?)\\\]/g, (match, math) => {
-                const placeholder = `%%MATH_DISPLAY_${counter}%%`;
-                mathPlaceholders.push({ placeholder, math: math.trim(), display: true });
-                counter++;
-                return placeholder;
-            });
-            
-            // Protect \(...\) inline math
-            content = content.replace(/\\\(([\s\S]*?)\\\)/g, (match, math) => {
-                const placeholder = `%%MATH_INLINE_${counter}%%`;
-                mathPlaceholders.push({ placeholder, math: math.trim(), display: false });
-                counter++;
-                return placeholder;
-            });
-            
-            return content;
+    // ==================== Marked Config ====================
+    marked.setOptions({
+        gfm: true, breaks: true,
+        highlight: function(code, lang) {
+            if (lang && hljs.getLanguage(lang)) { try { return hljs.highlight(code, { language: lang }).value; } catch(e){} }
+            return hljs.highlightAuto(code).value;
         }
+    });
 
-        // Postprocess: restore math and render with KaTeX
-        function postprocessMath(html) {
-            mathPlaceholders.forEach(({ placeholder, math, display }) => {
+    // ==================== Math ====================
+    let mathPlaceholders = [];
+
+    function preprocessMath(content) {
+        mathPlaceholders = [];
+        let n = 0;
+        content = content.replace(/\$\$([\s\S]*?)\$\$/g, function(m, math) { var p = '%%MD' + n + '%%'; mathPlaceholders.push({ p: p, math: math.trim(), d: true }); n++; return p; });
+        content = content.replace(/\$([^\$\n]+?)\$/g, function(m, math) { var p = '%%MD' + n + '%%'; mathPlaceholders.push({ p: p, math: math.trim(), d: false }); n++; return p; });
+        content = content.replace(/\\\[([\s\S]*?)\\\]/g, function(m, math) { var p = '%%MD' + n + '%%'; mathPlaceholders.push({ p: p, math: math.trim(), d: true }); n++; return p; });
+        content = content.replace(/\\\(([\s\S]*?)\\\)/g, function(m, math) { var p = '%%MD' + n + '%%'; mathPlaceholders.push({ p: p, math: math.trim(), d: false }); n++; return p; });
+        return content;
+    }
+
+    function postprocessMath(html) {
+        mathPlaceholders.forEach(function(item) {
+            try {
+                var rendered = katex.renderToString(item.math, {
+                    displayMode: item.d, throwOnError: false, trust: true, strict: false,
+                    macros: { "\\R":"\\mathbb{R}", "\\N":"\\mathbb{N}", "\\Z":"\\mathbb{Z}", "\\Q":"\\mathbb{Q}", "\\C":"\\mathbb{C}" }
+                });
+                html = html.replace(item.p, rendered);
+            } catch(e) { html = html.replace(item.p, '<code>' + escapeHtml(item.math) + '</code>'); }
+        });
+        return html;
+    }
+
+    function renderMarkdown(content) {
+        content = preprocessMath(content);
+        var html = marked.parse(content);
+        html = postprocessMath(html);
+        return html;
+    }
+
+    // ==================== Decoding ====================
+    function decodeNoteFromUrl() {
+        var params = new URLSearchParams(window.location.search);
+        var encoded = params.get('d');
+        if (!encoded) return null;
+        try {
+            var base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+            while (base64.length % 4) base64 += '=';
+            var decoded;
+            if (typeof pako !== 'undefined') {
                 try {
-                    const rendered = katex.renderToString(math, {
-                        displayMode: display,
-                        throwOnError: false,
-                        trust: true,
-                        strict: false,
-                        macros: {
-                            "\\R": "\\mathbb{R}",
-                            "\\N": "\\mathbb{N}",
-                            "\\Z": "\\mathbb{Z}",
-                            "\\Q": "\\mathbb{Q}",
-                            "\\C": "\\mathbb{C}"
-                        }
-                    });
-                    html = html.replace(placeholder, rendered);
-                } catch (e) {
-                    console.error('KaTeX error:', e);
-                    html = html.replace(placeholder, `<code class="math-error">${math}</code>`);
-                }
-            });
-            return html;
-        }
+                    var bin = atob(base64);
+                    var bytes = new Uint8Array(bin.length);
+                    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                    decoded = new TextDecoder().decode(pako.inflate(bytes));
+                } catch(e) { decoded = decodeURIComponent(escape(atob(base64))); }
+            } else { decoded = decodeURIComponent(escape(atob(base64))); }
+            var d = JSON.parse(decoded);
+            return { title: d.t || d.title || 'Shared Note', content: d.c || d.content || '', sharedAt: d.d || new Date().toISOString() };
+        } catch(e) { console.error('Decode error:', e); return null; }
+    }
 
-        // Render markdown with math support
-        function renderMarkdown(content) {
-            // Preprocess math
-            content = preprocessMath(content);
-            
-            // Parse markdown
-            let html = marked.parse(content);
-            
-            // Postprocess math
-            html = postprocessMath(html);
-            
-            return html;
-        }
+    function decompressNoteData(encoded) {
+        try {
+            var base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+            while (base64.length % 4) base64 += '=';
+            var decoded;
+            if (typeof pako !== 'undefined') {
+                try {
+                    var bin = atob(base64);
+                    var bytes = new Uint8Array(bin.length);
+                    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                    decoded = new TextDecoder().decode(pako.inflate(bytes));
+                } catch(e) { decoded = decodeURIComponent(escape(atob(base64))); }
+            } else { decoded = decodeURIComponent(escape(atob(base64))); }
+            var d = JSON.parse(decoded);
+            return { title: d.t || d.title || 'Shared Note', content: d.c || d.content || '', sharedAt: d.d || new Date().toISOString() };
+        } catch(e) { console.error('Decompress error:', e); return null; }
+    }
 
-        // Decode note from URL (Pako DEFLATE + base64url)
-        function decodeNoteFromUrl() {
-            const params = new URLSearchParams(window.location.search);
-            const encoded = params.get('d'); // 'd' parameter from app.js
-            
-            if (!encoded) {
-                return null;
-            }
-            
-            try {
-                // Restore base64 format from base64url
-                let base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
-                // Add padding if needed
-                while (base64.length % 4) base64 += '=';
-                
-                let decoded;
-                
-                if (typeof pako !== 'undefined') {
-                    try {
-                        // Decode base64 to bytes
-                        const binaryStr = atob(base64);
-                        const bytes = new Uint8Array(binaryStr.length);
-                        for (let i = 0; i < binaryStr.length; i++) {
-                            bytes[i] = binaryStr.charCodeAt(i);
-                        }
-                        // Decompress with Pako INFLATE
-                        const decompressed = pako.inflate(bytes);
-                        decoded = new TextDecoder().decode(decompressed);
-                    } catch (pakoErr) {
-                        // Pako failed, try simple base64
-                        console.log('Pako decompression failed, trying base64 fallback');
-                        decoded = decodeURIComponent(escape(atob(base64)));
-                    }
-                } else {
-                    // No Pako, use simple base64
-                    decoded = decodeURIComponent(escape(atob(base64)));
-                }
-                
-                const noteData = JSON.parse(decoded);
-                return {
-                    title: noteData.t || noteData.title || 'Shared Note',
-                    content: noteData.c || noteData.content || '',
-                    sharedAt: noteData.d || new Date().toISOString()
-                };
-            } catch (e) {
-                console.error('Error decoding note:', e);
-                return null;
-            }
-        }
+    function getAliasFromUrl() {
+        var params = new URLSearchParams(window.location.search);
+        if (params.get('alias')) return params.get('alias');
+        var segs = window.location.pathname.split('/').filter(function(s) { return s && s !== 'view.html'; });
+        return segs.length > 0 ? segs[segs.length - 1] : null;
+    }
 
-        // Show error
-        function showError(title, message) {
-            document.getElementById('main-content').innerHTML = `
-                <div class="error-container">
-                    <div class="error-icon">❌</div>
-                    <h2 class="error-title">${title}</h2>
-                    <p class="error-message">${message}</p>
-                    <a href="/" class="btn btn-primary">Create Your Own Note</a>
-                </div>
-            `;
-        }
+    async function loadNoteByAlias(alias) {
+        try {
+            var r = await fetch('/api/note/' + alias);
+            if (r.ok) { var j = await r.json(); if (j.success && j.data) { var n = decompressNoteData(j.data); if (n) { n.views = j.views; return n; } } }
+        } catch(e) { console.log('KV API unavailable, trying fallback...'); }
+        try {
+            var r2 = await fetch('/shared-notes.json');
+            if (!r2.ok) throw new Error('Not found');
+            var data = await r2.json();
+            if (data.aliases && data.aliases[alias]) return decompressNoteData(data.aliases[alias]);
+            if (data.notes) { for (var id in data.notes) { if (data.notes[id].alias === alias && data.notes[id].data) return decompressNoteData(data.notes[id].data); } }
+        } catch(e) { console.error('Alias load error:', e); }
+        return null;
+    }
 
-        // Display note
-        function displayNote(note) {
-            const renderedContent = renderMarkdown(note.content);
-            
-            document.getElementById('main-content').innerHTML = `
-                <div class="note-header">
-                    <h1 class="note-title">${escapeHtml(note.title)}</h1>
-                    ${note.sharedAt ? `<p class="note-meta">Shared: ${new Date(note.sharedAt).toLocaleDateString()}</p>` : ''}
-                </div>
-                <div class="note-content" id="note-content">
-                    ${renderedContent}
-                </div>
-            `;
-            
-            // Update page title
-            document.title = `${note.title} - Markdown Notes`;
-            
-            // Render Mermaid diagrams
-            setTimeout(() => {
-                document.querySelectorAll('.language-mermaid, pre code.mermaid').forEach((el, index) => {
-                    const code = el.textContent;
-                    const container = document.createElement('div');
-                    container.className = 'mermaid';
-                    container.id = `mermaid-${index}`;
-                    container.textContent = code;
-                    el.closest('pre').replaceWith(container);
-                });
-                mermaid.run();
-            }, 100);
-        }
+    // ==================== Display ====================
+    function escapeHtml(t) { var d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
 
-        // Escape HTML
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
+    function showError(title, message) {
+        document.getElementById('main-content').innerHTML =
+            '<div class="error-container">' +
+            '<div class="error-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent-danger)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>' +
+            '<h2 class="error-title">' + title + '</h2>' +
+            '<p class="error-message">' + message + '</p>' +
+            '<a href="/" class="view-btn view-btn-primary">Create Your Own Note</a>' +
+            '</div>';
+    }
 
-        // Store content for copy
-        let currentNote = null;
+    async function displayNote(note) {
+        var renderedContent = renderMarkdown(note.content);
+        var words = note.content.trim().split(/\s+/).length;
 
-        // Copy content function
-        function copyContent() {
-            if (currentNote) {
-                navigator.clipboard.writeText(currentNote.content).then(() => {
-                    alert('Content copied to clipboard!');
-                }).catch(() => {
-                    // Fallback
-                    const textarea = document.createElement('textarea');
-                    textarea.value = currentNote.content;
-                    document.body.appendChild(textarea);
-                    textarea.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(textarea);
-                    alert('Content copied to clipboard!');
-                });
-            }
-        }
+        var metaHtml = '';
+        if (note.sharedAt) metaHtml += '<span>Shared ' + new Date(note.sharedAt).toLocaleDateString() + '</span>';
+        metaHtml += '<span>' + words.toLocaleString() + ' words</span>';
+        metaHtml += '<span>' + Math.ceil(words / 200) + ' min read</span>';
+        if (note.views) metaHtml += '<span>' + note.views + ' views</span>';
 
-        // Get alias from URL path (e.g., /view.html?alias=my-note or /my-note)
-        function getAliasFromUrl() {
-            // Check query parameter first
-            const params = new URLSearchParams(window.location.search);
-            const aliasParam = params.get('alias');
-            if (aliasParam) return aliasParam;
-            
-            // Check URL path (for /my-note style URLs)
-            const path = window.location.pathname;
-            const segments = path.split('/').filter(s => s && s !== 'view.html');
-            if (segments.length > 0) {
-                return segments[segments.length - 1];
-            }
-            return null;
-        }
+        document.getElementById('main-content').innerHTML =
+            '<div class="note-header">' +
+            '<h1 class="note-title">' + escapeHtml(note.title) + '</h1>' +
+            '<div class="note-meta">' + metaHtml + '</div>' +
+            '</div>' +
+            '<div class="note-content" id="note-content">' + renderedContent + '</div>';
 
-        // Load note by alias from KV API (primary) or shared-notes.json (fallback)
-        async function loadNoteByAlias(alias) {
-            // Try KV API first
-            try {
-                const response = await fetch(`/api/note/${alias}`);
-                if (response.ok) {
-                    const result = await response.json();
-                    if (result.success && result.data) {
-                        const note = decompressNoteData(result.data);
-                        if (note) {
-                            note.views = result.views;
-                            return note;
-                        }
-                    }
-                }
-            } catch (e) {
-                console.log('KV API not available, trying fallback...');
-            }
-            
-            // Fallback to shared-notes.json
-            try {
-                const response = await fetch('/shared-notes.json');
-                if (!response.ok) throw new Error('Failed to load shared notes');
-                
-                const data = await response.json();
-                
-                // Check aliases map for compressed data
-                if (data.aliases && data.aliases[alias]) {
-                    const compressedData = data.aliases[alias];
-                    return decompressNoteData(compressedData);
-                }
-                
-                // Also check notes by alias
-                if (data.notes) {
-                    for (const [id, note] of Object.entries(data.notes)) {
-                        if (note.alias === alias && note.data) {
-                            return decompressNoteData(note.data);
-                        }
-                    }
-                }
-                
-                return null;
-            } catch (e) {
-                console.error('Error loading note by alias:', e);
-                return null;
-            }
-        }
+        document.title = note.title + ' \u2014 Markdown Notes';
+        document.getElementById('viewStatusText').textContent = note.title;
 
-        // Decompress note data (Pako DEFLATE + base64url)
-        function decompressNoteData(encoded) {
-            try {
-                // Restore base64 format from base64url
-                let base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
-                while (base64.length % 4) base64 += '=';
-                
-                let decoded;
-                
-                if (typeof pako !== 'undefined') {
-                    try {
-                        const binaryStr = atob(base64);
-                        const bytes = new Uint8Array(binaryStr.length);
-                        for (let i = 0; i < binaryStr.length; i++) {
-                            bytes[i] = binaryStr.charCodeAt(i);
-                        }
-                        const decompressed = pako.inflate(bytes);
-                        decoded = new TextDecoder().decode(decompressed);
-                    } catch (pakoErr) {
-                        decoded = decodeURIComponent(escape(atob(base64)));
-                    }
-                } else {
-                    decoded = decodeURIComponent(escape(atob(base64)));
-                }
-                
-                const noteData = JSON.parse(decoded);
-                return {
-                    title: noteData.t || noteData.title || 'Shared Note',
-                    content: noteData.c || noteData.content || '',
-                    sharedAt: noteData.d || new Date().toISOString()
-                };
-            } catch (e) {
-                console.error('Decompression error:', e);
-                return null;
-            }
-        }
+        // Highlight code
+        document.querySelectorAll('#note-content pre code').forEach(function(b) { hljs.highlightElement(b); });
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Wait a bit for Pako to load
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-            let note = null;
-            
-            // First, check for ?d= parameter (direct encoded data)
-            note = decodeNoteFromUrl();
-            
-            // If no direct data, check for alias
-            if (!note) {
-                const alias = getAliasFromUrl();
-                if (alias && alias !== 'view' && alias !== 'view.html') {
-                    note = await loadNoteByAlias(alias);
-                }
-            }
-            
-            if (note) {
-                currentNote = note;
-                displayNote(note);
-            } else {
-                // Check if we have any parameters at all
-                const params = new URLSearchParams(window.location.search);
-                const hasParams = params.has('d') || params.has('alias');
-                
-                if (hasParams) {
-                    showError('Note Not Found', 'The shared note could not be found or the link is invalid.');
-                } else {
-                    // No parameters - redirect to main page
-                    window.location.href = '/';
-                }
-            }
+        // Task lists
+        document.querySelectorAll('#note-content li').forEach(function(li) {
+            var t = li.innerHTML;
+            if (t.startsWith('[ ] ')) { li.innerHTML = '<input type="checkbox" disabled> ' + t.slice(4); li.classList.add('task-list-item'); }
+            else if (t.startsWith('[x] ') || t.startsWith('[X] ')) { li.innerHTML = '<input type="checkbox" checked disabled> ' + t.slice(4); li.classList.add('task-list-item'); }
         });
+
+        // Callouts
+        var nc = document.getElementById('note-content');
+        nc.innerHTML = nc.innerHTML
+            .replace(/<p>:::\s*(warning|info|success|danger)\s*<\/p>/gi, '<div class="callout callout-$1">')
+            .replace(/<p>:::<\/p>/g, '</div>');
+
+        // Lazy-load diagrams and charts only if content has them
+        await renderAllDiagrams();
+        await renderAllCharts();
+    }
+
+    // ==================== Diagram Rendering (lazy) ====================
+    async function renderAllDiagrams() {
+        var nc = document.getElementById('note-content');
+        if (!nc) return;
+
+        // Mermaid
+        var mermaidBlocks = nc.querySelectorAll('pre code.language-mermaid, pre code.mermaid');
+        if (mermaidBlocks.length > 0) {
+            try {
+                await ensureMermaid();
+                for (var i = 0; i < mermaidBlocks.length; i++) {
+                    var block = mermaidBlocks[i];
+                    var code = block.textContent;
+                    var pre = block.closest('pre');
+                    if (!pre) continue;
+                    try {
+                        var id = 'mermaid-' + Date.now() + '-' + i;
+                        var div = document.createElement('div');
+                        div.className = 'mermaid-container';
+                        var result = await mermaid.render(id, code);
+                        div.innerHTML = result.svg;
+                        pre.replaceWith(div);
+                    } catch(err) {
+                        var ed = document.createElement('div');
+                        ed.className = 'diagram-error';
+                        ed.textContent = 'Mermaid error: ' + err.message;
+                        pre.insertAdjacentElement('afterend', ed);
+                    }
+                }
+            } catch(e) { console.warn('Mermaid load failed:', e); }
+        }
+
+        // PlantUML
+        var pumlBlocks = nc.querySelectorAll('pre code.language-plantuml, pre code.plantuml');
+        if (pumlBlocks.length > 0) {
+            try {
+                await ensurePlantUML();
+                pumlBlocks.forEach(function(block) {
+                    var code = block.textContent;
+                    var encoded = plantumlEncoder.encode(code);
+                    var img = document.createElement('img');
+                    img.src = 'https://www.plantuml.com/plantuml/svg/' + encoded;
+                    img.alt = 'PlantUML Diagram';
+                    img.className = 'diagram-image';
+                    var div = document.createElement('div');
+                    div.className = 'diagram-container';
+                    div.appendChild(img);
+                    block.parentElement.replaceWith(div);
+                });
+            } catch(e) { console.warn('PlantUML load failed:', e); }
+        }
+
+        // Graphviz
+        var gvBlocks = nc.querySelectorAll('pre code.language-dot, pre code.language-graphviz, pre code.dot, pre code.graphviz');
+        if (gvBlocks.length > 0) {
+            try {
+                await ensureViz();
+                for (var g = 0; g < gvBlocks.length; g++) {
+                    var gBlock = gvBlocks[g];
+                    try {
+                        var viz = new Viz();
+                        var svg = await viz.renderSVGElement(gBlock.textContent);
+                        var gDiv = document.createElement('div');
+                        gDiv.className = 'diagram-container';
+                        gDiv.appendChild(svg);
+                        gBlock.parentElement.replaceWith(gDiv);
+                    } catch(err) {
+                        var ged = document.createElement('div');
+                        ged.className = 'diagram-error';
+                        ged.textContent = 'Graphviz error: ' + err.message;
+                        gBlock.parentElement.insertAdjacentElement('afterend', ged);
+                    }
+                }
+            } catch(e) { console.warn('Viz.js load failed:', e); }
+        }
+
+        // D2
+        nc.querySelectorAll('pre code.language-d2, pre code.d2').forEach(function(block) {
+            var code = block.textContent;
+            var div = document.createElement('div');
+            div.className = 'diagram-container d2-placeholder';
+            div.innerHTML = '<div style="padding:1.5rem;text-align:center;">' +
+                '<p style="color:var(--text-secondary)">D2 Diagram (requires server-side rendering)</p>' +
+                '<pre style="text-align:left;max-height:200px;overflow:auto;margin:10px 0">' + escapeHtml(code) + '</pre>' +
+                '<a href="https://play.d2lang.com/?script=' + encodeURIComponent(code) + '" target="_blank" style="color:var(--accent-primary)">Open in D2 Playground \u2192</a>' +
+                '</div>';
+            block.parentElement.replaceWith(div);
+        });
+    }
+
+    // ==================== Chart Rendering (lazy) ====================
+    async function renderAllCharts() {
+        var nc = document.getElementById('note-content');
+        if (!nc) return;
+
+        // Chart.js
+        var cjsBlocks = nc.querySelectorAll('pre code.language-chartjs, pre code.chartjs');
+        if (cjsBlocks.length > 0) {
+            try {
+                await ensureChartJS();
+                cjsBlocks.forEach(function(block, idx) {
+                    try {
+                        var config = JSON.parse(block.textContent);
+                        var canvas = document.createElement('canvas');
+                        canvas.id = 'chart-' + Date.now() + '-' + idx;
+                        var div = document.createElement('div');
+                        div.className = 'chart-container';
+                        div.style.maxWidth = '600px';
+                        div.style.margin = '1rem auto';
+                        div.appendChild(canvas);
+                        block.parentElement.replaceWith(div);
+                        new Chart(canvas, config);
+                    } catch(err) { console.error('Chart.js error:', err); }
+                });
+            } catch(e) { console.warn('Chart.js load failed:', e); }
+        }
+
+        // Plotly
+        var plotlyBlocks = nc.querySelectorAll('pre code.language-plotly, pre code.plotly');
+        if (plotlyBlocks.length > 0) {
+            try {
+                await ensurePlotly();
+                plotlyBlocks.forEach(function(block, idx) {
+                    try {
+                        var config = JSON.parse(block.textContent);
+                        var div = document.createElement('div');
+                        div.id = 'plotly-' + Date.now() + '-' + idx;
+                        div.className = 'chart-container';
+                        block.parentElement.replaceWith(div);
+                        Plotly.newPlot(div.id, config.data || [], config.layout || {}, config.config || {});
+                    } catch(err) { console.error('Plotly error:', err); }
+                });
+            } catch(e) { console.warn('Plotly load failed:', e); }
+        }
+
+        // Vega / Vega-Lite
+        var vegaBlocks = nc.querySelectorAll('pre code.language-vega-lite, pre code.language-vegalite, pre code.vega-lite, pre code.language-vega, pre code.vega');
+        if (vegaBlocks.length > 0) {
+            try {
+                await ensureVega();
+                vegaBlocks.forEach(function(block, idx) {
+                    try {
+                        var spec = JSON.parse(block.textContent);
+                        var div = document.createElement('div');
+                        div.id = 'vega-' + Date.now() + '-' + idx;
+                        div.className = 'chart-container';
+                        block.parentElement.replaceWith(div);
+                        vegaEmbed('#' + div.id, spec, { theme: 'dark' });
+                    } catch(err) { console.error('Vega error:', err); }
+                });
+            } catch(e) { console.warn('Vega load failed:', e); }
+        }
+    }
+
+    // ==================== Copy ====================
+    var currentNote = null;
+    function copyContent() {
+        if (!currentNote) return;
+        navigator.clipboard.writeText(currentNote.content).then(function() {
+            var btn = document.querySelector('.view-btn-secondary');
+            if (btn) {
+                var orig = btn.innerHTML;
+                btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+                setTimeout(function() { btn.innerHTML = orig; }, 2000);
+            }
+        }).catch(function() {
+            var ta = document.createElement('textarea'); ta.value = currentNote.content; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+        });
+    }
+
+    // ==================== Init ====================
+    document.addEventListener('DOMContentLoaded', async function() {
+        await new Promise(function(r) { setTimeout(r, 100); });
+        var note = decodeNoteFromUrl();
+        if (!note) {
+            var alias = getAliasFromUrl();
+            if (alias && alias !== 'view' && alias !== 'view.html') {
+                note = await loadNoteByAlias(alias);
+            }
+        }
+        if (note) {
+            currentNote = note;
+            await displayNote(note);
+        } else {
+            var params = new URLSearchParams(window.location.search);
+            if (params.has('d') || params.has('alias')) {
+                showError('Note Not Found', 'The shared note could not be found or the link is invalid.');
+            } else {
+                window.location.href = '/';
+            }
+        }
+    });
     </script>
 </body>
 </html>
