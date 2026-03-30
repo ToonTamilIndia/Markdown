@@ -510,6 +510,16 @@ Paste your notes directly here!"></textarea>
                     <label class="checkbox-label"><input type="checkbox" id="aiAutoSave"> Auto-save AI changes</label>
                     <label class="checkbox-label"><input type="checkbox" id="aiConfirmChanges" checked> Confirm before applying</label>
                 </div>
+                <div class="ai-settings-section">
+                    <h3>Code Runner</h3>
+                    <label class="checkbox-label"><input type="checkbox" id="codeRunnerEnabled" checked> Enable "Run" button on runnable code blocks</label>
+                    <p class="help-text">Default backend is <strong>Piston</strong> (no key needed). If <code>JUDGE0_SELF_HOST_URL</code> is set in Worker env, it automatically uses your Judge0 self-host API instead.</p>
+                    <div class="api-key-group">
+                        <div class="api-key-header"><label>Active Backend</label><span class="api-key-status" id="judge0Status">Checking...</span></div>
+                        <small>Piston fallback: <code>https://emkc.org/api/v2/piston/execute</code></small>
+                    </div>
+                    <small class="help-text">Optional Worker env for self-host: <code>JUDGE0_SELF_HOST_URL</code></small>
+                </div>
                 <div class="modal-actions">
                     <button class="btn-primary" onclick="saveAISettings()">Save</button>
                     <button class="btn-secondary" onclick="testAIConnection()">Test</button>

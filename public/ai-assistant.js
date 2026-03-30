@@ -618,6 +618,10 @@ function showAISettings() {
         // Update provider and load models
         updateProviderSettings();
     }
+
+    if (typeof loadCodeRunnerSettingsIntoUI === 'function') {
+        loadCodeRunnerSettingsIntoUI();
+    }
     
     // Update API key statuses
     updateAPIKeyStatuses();
@@ -665,6 +669,13 @@ function saveAISettings() {
     localStorage.setItem('ai_agent_mode', agentMode);
     localStorage.setItem('ai_auto_save', autoSave);
     localStorage.setItem('ai_confirm_changes', confirmChanges);
+
+    if (typeof saveCodeRunnerSettingsFromUI === 'function') {
+        saveCodeRunnerSettingsFromUI();
+    }
+    if (typeof refreshCodeRunnerStatus === 'function') {
+        refreshCodeRunnerStatus();
+    }
     
     updateAIButtonState();
     updateAPIKeyStatuses();

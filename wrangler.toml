@@ -10,3 +10,4 @@ kv_namespaces = [
 
 # Environment variables (set in Cloudflare dashboard):
 # - MASTER_KEY: Secret key for managing shared notes (DELETE and LIST operations)
+# - JUDGE0_SELF_HOST_URL: Optional self-hosted Judge0 base URL (when unset, Worker uses Piston fallback)

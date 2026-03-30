@@ -495,6 +495,77 @@ html, body {
 }
 .preview-content pre code { background: none; padding: 0; font-size: .9em; line-height: 1.5; }
 
+.preview-content pre.code-runnable {
+    position: relative;
+    padding-top: 44px;
+}
+.code-run-toolbar {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.code-run-lang {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+.code-run-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all var(--transition);
+}
+.code-run-btn:hover:not(:disabled) {
+    border-color: var(--accent-primary);
+    color: #fff;
+}
+.code-run-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.code-run-output {
+    margin-top: -4px;
+    margin-bottom: 14px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--bg-secondary);
+}
+.code-run-output-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+.code-run-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+.code-run-output pre {
+    margin: 0;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.code-run-output.running .code-run-output-header { color: var(--accent-primary); }
+.code-run-output.success .code-run-output-header { color: var(--accent-secondary); }
+.code-run-output.error .code-run-output-header { color: var(--accent-danger); }
+
 .preview-content blockquote {
     border-left: 3px solid var(--accent-primary);
     padding: 4px 16px;
@@ -947,7 +1018,9 @@ html, body {
 
 /* ========== Diagrams & Charts ========== */
 .mermaid-container, .diagram-container, .chart-container { margin: 14px 0; padding: 12px; background: var(--bg-tertiary); border-radius: var(--radius); overflow-x: auto; }
+.mermaid-container { text-align: center; }
 .mermaid-container svg, .diagram-container svg { max-width: 100%; height: auto; }
+.mermaid-container svg, .mermaid svg { display: block; margin: 0 auto; }
 .diagram-image { max-width: 100%; height: auto; display: block; margin: 0 auto; }
 .diagram-error { padding: 10px; margin: 10px 0; background: rgba(248,81,73,.08); border-left: 3px solid var(--accent-danger); color: var(--accent-danger); border-radius: var(--radius); font-size: 12px; }
 .chart-container canvas { max-width: 100%; height: auto !important; }

@@ -8,6 +8,25 @@ const SETTINGS_KEY = 'markdown_notes_settings';
 const VERSION_KEY = 'markdown_notes_versions';
 const SHARED_NOTES_KEY = 'shared_notes_data';
 const BASE_URL = 'https://markdown.toontamilindia.in';
+const CODE_RUNNER_SETTINGS_KEY = 'markdown_code_runner_settings';
+
+const RUNNABLE_LANGUAGE_MAP = {
+    javascript: { judge0Id: 63, pistonLanguage: 'javascript', label: 'JavaScript' },
+    js: { judge0Id: 63, pistonLanguage: 'javascript', label: 'JavaScript' },
+    python: { judge0Id: 71, pistonLanguage: 'python', label: 'Python' },
+    py: { judge0Id: 71, pistonLanguage: 'python', label: 'Python' },
+    java: { judge0Id: 62, pistonLanguage: 'java', label: 'Java' },
+    c: { judge0Id: 50, pistonLanguage: 'c', label: 'C' },
+    cpp: { judge0Id: 54, pistonLanguage: 'cpp', label: 'C++' },
+    cxx: { judge0Id: 54, pistonLanguage: 'cpp', label: 'C++' },
+    go: { judge0Id: 60, pistonLanguage: 'go', label: 'Go' },
+    rust: { judge0Id: 73, pistonLanguage: 'rust', label: 'Rust' },
+    rs: { judge0Id: 73, pistonLanguage: 'rust', label: 'Rust' },
+    csharp: { judge0Id: 51, pistonLanguage: 'csharp', label: 'C#' },
+    cs: { judge0Id: 51, pistonLanguage: 'csharp', label: 'C#' },
+    bash: { judge0Id: 46, pistonLanguage: 'bash', label: 'Bash' },
+    sh: { judge0Id: 46, pistonLanguage: 'bash', label: 'Bash' }
+};
 
 // Shared notes local tracking (for managing shared links)
 let sharedNotesData = {
@@ -145,11 +164,17 @@ let settings = {
     font: 'monospace'
 };
 let noteVersions = {};
+let codeRunnerSettings = {
+    enabled: true
+};
+let codeRunnerEnvConfigured = false;
+let codeRunnerBackend = 'piston';
 
 // Initialize Application
 document.addEventListener('DOMContentLoaded', () => {
     loadNotes();
     loadSettings();
+    loadCodeRunnerSettings();
     loadVersions();
     loadSharedNotes();
     loadMasterKeyState();
@@ -189,6 +214,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Update stats periodically
     updateNoteStats();
+
+    // Fetch Worker-side Judge0 config status (if available)
+    refreshCodeRunnerStatus();
 });
 
 // ==================== LAZY LOADING ====================
@@ -353,6 +381,233 @@ function loadNotes() {
 // Save Notes to LocalStorage
 function saveNotes() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+}
+
+function normalizeCodeRunnerSettings(raw = {}) {
+    return {
+        enabled: raw.enabled !== false
+    };
+}
+
+function loadCodeRunnerSettings() {
+    const stored = localStorage.getItem(CODE_RUNNER_SETTINGS_KEY);
+    if (!stored) {
+        codeRunnerSettings = normalizeCodeRunnerSettings({});
+        return;
+    }
+
+    try {
+        codeRunnerSettings = normalizeCodeRunnerSettings(JSON.parse(stored));
+    } catch (e) {
+        console.warn('Invalid code runner settings, using defaults.', e);
+        codeRunnerSettings = normalizeCodeRunnerSettings({});
+    }
+}
+
+function persistCodeRunnerSettings() {
+    localStorage.setItem(CODE_RUNNER_SETTINGS_KEY, JSON.stringify(codeRunnerSettings));
+}
+
+async function refreshCodeRunnerStatus() {
+    try {
+        const response = await fetch('/api/code-runner-status');
+        if (!response.ok) throw new Error(`Status endpoint returned ${response.status}`);
+
+        const data = await response.json();
+        codeRunnerEnvConfigured = Boolean(data && data.usesJudge0);
+        codeRunnerBackend = data && data.mode === 'judge0' ? 'judge0' : 'piston';
+    } catch (err) {
+        codeRunnerEnvConfigured = false;
+        codeRunnerBackend = 'piston';
+        console.warn('Code runner status unavailable:', err.message);
+    }
+
+    updateCodeRunnerStatusBadge();
+    updateCodeRunnerButtonsState();
+}
+
+function isCodeRunnerConfigured() {
+    return codeRunnerSettings.enabled;
+}
+
+function updateCodeRunnerStatusBadge() {
+    const statusEl = document.getElementById('judge0Status');
+    if (!statusEl) return;
+
+    let text = 'Piston (default)';
+    let configured = false;
+
+    if (!codeRunnerSettings.enabled) {
+        text = 'Disabled';
+    } else if (codeRunnerBackend === 'judge0' && codeRunnerEnvConfigured) {
+        text = 'Judge0 (self-host)';
+        configured = true;
+    } else {
+        text = 'Piston (default)';
+        configured = true;
+    }
+
+    statusEl.textContent = text;
+    statusEl.classList.toggle('configured', configured);
+}
+
+function loadCodeRunnerSettingsIntoUI() {
+    const enabledEl = document.getElementById('codeRunnerEnabled');
+
+    if (enabledEl) enabledEl.checked = codeRunnerSettings.enabled;
+
+    updateCodeRunnerStatusBadge();
+}
+
+function saveCodeRunnerSettingsFromUI() {
+    const enabledEl = document.getElementById('codeRunnerEnabled');
+
+    codeRunnerSettings = normalizeCodeRunnerSettings({
+        enabled: enabledEl ? enabledEl.checked : true
+    });
+
+    persistCodeRunnerSettings();
+    updateCodeRunnerStatusBadge();
+    updateCodeRunnerButtonsState();
+}
+
+function getRunnableLanguageInfo(codeBlock) {
+    const langClass = Array.from(codeBlock.classList).find(cls => cls.startsWith('language-'));
+    if (!langClass) return null;
+    const key = langClass.replace('language-', '').toLowerCase();
+    const lang = RUNNABLE_LANGUAGE_MAP[key];
+    if (!lang) return null;
+    return { key, ...lang };
+}
+
+function updateCodeRunnerButtonsState(container = document.getElementById('previewContent')) {
+    if (!container) return;
+    const canRun = isCodeRunnerConfigured();
+
+    container.querySelectorAll('.code-run-btn').forEach(btn => {
+        if (btn.dataset.running === 'true') return;
+        btn.disabled = !canRun;
+        btn.title = canRun
+            ? 'Run this code'
+            : 'Enable Code Runner in AI Settings.';
+    });
+}
+
+function decorateRunnableCodeBlocks(container) {
+    if (!container) return;
+
+    const codeBlocks = container.querySelectorAll('pre code');
+    codeBlocks.forEach(codeBlock => {
+        const langInfo = getRunnableLanguageInfo(codeBlock);
+        if (!langInfo) return;
+
+        const pre = codeBlock.closest('pre');
+        if (!pre) return;
+
+        pre.classList.add('code-runnable');
+
+        let toolbar = pre.querySelector('.code-run-toolbar');
+        if (!toolbar) {
+            toolbar = document.createElement('div');
+            toolbar.className = 'code-run-toolbar';
+            toolbar.innerHTML = `
+                <span class="code-run-lang"></span>
+                <button class="code-run-btn" type="button">Run</button>
+            `;
+            pre.appendChild(toolbar);
+        }
+
+        const langEl = toolbar.querySelector('.code-run-lang');
+        const runBtn = toolbar.querySelector('.code-run-btn');
+        if (!runBtn || !langEl) return;
+
+        langEl.textContent = langInfo.label;
+        runBtn.onclick = () => runCodeBlock(codeBlock, langInfo, runBtn);
+    });
+
+    updateCodeRunnerButtonsState(container);
+}
+
+function getOrCreateRunOutput(pre) {
+    const next = pre.nextElementSibling;
+    if (next && next.classList.contains('code-run-output')) return next;
+
+    const output = document.createElement('div');
+    output.className = 'code-run-output';
+    pre.insertAdjacentElement('afterend', output);
+    return output;
+}
+
+function setCodeRunOutput(outputEl, state, title, content, meta = '') {
+    outputEl.className = `code-run-output ${state}`;
+    outputEl.innerHTML = `
+        <div class="code-run-output-header">
+            <span>${escapeHtml(title)}</span>
+            ${meta ? `<span class="code-run-meta">${escapeHtml(meta)}</span>` : ''}
+        </div>
+        <pre>${escapeHtml(content)}</pre>
+    `;
+}
+
+async function runCodeBlock(codeBlock, langInfo, runBtn) {
+    if (!isCodeRunnerConfigured()) {
+        showToast('Enable Code Runner in AI Settings first.', 'warning');
+        return;
+    }
+
+    const pre = codeBlock.closest('pre');
+    if (!pre) return;
+
+    const outputEl = getOrCreateRunOutput(pre);
+    const previousText = runBtn.textContent;
+
+    runBtn.dataset.running = 'true';
+    runBtn.disabled = true;
+    runBtn.textContent = 'Running...';
+    setCodeRunOutput(outputEl, 'running', `Running ${langInfo.label}`, 'Submitting code to Judge0...');
+
+    try {
+        const payload = {
+            language: langInfo.pistonLanguage,
+            languageId: langInfo.judge0Id,
+            sourceCode: codeBlock.textContent || ''
+        };
+
+        const response = await fetch('/api/run-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) {
+            throw new Error(data.details || data.error || `Execution failed (${response.status})`);
+        }
+
+        const result = data.result || {};
+        const statusId = result.status && typeof result.status.id !== 'undefined' ? Number(result.status.id) : null;
+        const statusText = result.status && result.status.description ? result.status.description : 'Completed';
+        const outputChunks = [];
+
+        if (result.stdout) outputChunks.push(result.stdout);
+        if (result.stderr) outputChunks.push(`[stderr]\n${result.stderr}`);
+        if (result.compileOutput) outputChunks.push(`[compile]\n${result.compileOutput}`);
+        if (result.message) outputChunks.push(`[message]\n${result.message}`);
+
+        const outputText = outputChunks.join('\n\n').trim() || '(No output)';
+        const meta = [];
+        if (result.time !== null && result.time !== undefined && result.time !== '') meta.push(`time: ${result.time}s`);
+        if (result.memory !== null && result.memory !== undefined && result.memory !== '') meta.push(`memory: ${result.memory} KB`);
+
+        const state = statusId === 3 ? 'success' : 'error';
+        setCodeRunOutput(outputEl, state, `Result: ${statusText}`, outputText, meta.join(' · '));
+    } catch (err) {
+        setCodeRunOutput(outputEl, 'error', 'Execution failed', err.message || 'Unknown error');
+    } finally {
+        delete runBtn.dataset.running;
+        runBtn.textContent = previousText;
+        updateCodeRunnerButtonsState(pre.parentElement || document.getElementById('previewContent'));
+    }
 }
 
 // Load Master Key State
@@ -660,6 +915,9 @@ function updatePreview() {
     previewContainer.innerHTML = previewContainer.innerHTML
         .replace(/<p>:::\s*(warning|info|success|danger)\s*<\/p>/gi, '<div class="callout callout-$1">')
         .replace(/<p>:::<\/p>/g, '</div>');
+
+    // Add "Run" action to runnable code blocks
+    decorateRunnableCodeBlocks(previewContainer);
 
     // Update status bar stats
     updateNoteStats();

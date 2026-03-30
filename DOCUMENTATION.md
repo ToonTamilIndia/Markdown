@@ -46,6 +46,7 @@
 ✅ **Agent Mode** - Auto-create/edit files with AI  
 ✅ **Multiple API Keys** - Store and switch between providers  
 ✅ **Dynamic Models** - Auto-fetch model lists  
+✅ **Code Runner** - Execute runnable code fences via Piston (default) or Judge0 self-host  
 
 ---
 
@@ -92,6 +93,15 @@ Create a mermaid flowchart for user authentication
 Explain quantum computing in simple terms
 Generate a comparison table of Python vs JavaScript
 ```
+
+### Code Runner (Piston + Judge0 Self-Host)
+
+1. Open **AI Settings**
+2. Enable **Code Runner**
+3. No API key needed for default Piston mode
+4. Add code fences in supported languages (`javascript`, `python`, `java`, `c`, `cpp`, `go`, `rust`, `csharp`, `bash`)
+5. Optional: set `JUDGE0_SELF_HOST_URL` in Worker env to use Judge0 self-host
+6. Click **Run** button in preview above the code block
 
 ### Templates
 Quick prompts for common tasks:
@@ -234,7 +244,11 @@ kv_namespaces = [
 ]
 ```
 
-5. **Deploy**
+5. **Set Worker Environment Variables**
+   - `MASTER_KEY` (already used for share-management routes)
+   - `JUDGE0_SELF_HOST_URL` (optional; if unset, Piston is used by default)
+
+6. **Deploy**
 ```bash
 wrangler deploy
 ```

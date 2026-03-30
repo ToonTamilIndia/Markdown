@@ -57,6 +57,7 @@ A beautiful, feature-rich Markdown notes application with comprehensive diagram 
 - **✅ Task Lists** - Interactive checkboxes
 - **📁 Collapsible Sections** - Hide/show content sections
 - **🤖 AI Assistant** - AI-powered content creation and editing (Desktop only)
+- **▶️ Code Runner** - Run supported code blocks (Piston default, Judge0 self-host optional)
 
 ## 🚀 New in This Update
 
@@ -92,6 +93,7 @@ A beautiful, feature-rich Markdown notes application with comprehensive diagram 
 - ✅ **Inline editing** - Ctrl+I for quick AI access (like VS Code)
 - ✅ **Desktop only** - Optimized UX for desktop users
 - ✅ **Secure** - API keys stored locally in browser
+- ✅ **Hosted code execution** - Piston by default, auto-switch to Judge0 self-host when configured
 
 ## 🔧 Usage
 
@@ -226,6 +228,14 @@ Continue writing from here
 ```
 
 See [AI_GUIDE.md](./AI_GUIDE.md) for comprehensive documentation.
+
+### Code Runner (Piston default + Judge0 self-host optional)
+
+1. Open **AI Settings**
+2. In **Code Runner**, enable run buttons for code blocks
+3. Optional: set Worker env `JUDGE0_SELF_HOST_URL` to use your own Judge0 server
+4. If `JUDGE0_SELF_HOST_URL` is not set, Worker uses `https://emkc.org/api/v2/piston/execute`
+5. Add fenced code blocks (for example `python` or `javascript`) and click **Run** in preview
 
 ### Master Key Access
 - Click **"🔑 Master Key"** in the sidebar
