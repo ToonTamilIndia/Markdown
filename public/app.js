@@ -1,13 +1,13 @@
 // Markdown Notes Application
-// Master Key: ToonTamilIndia
 
-const MASTER_KEY = 'ToonTamilIndia';
 const STORAGE_KEY = 'markdown_notes';
-const MASTER_KEY_UNLOCKED = 'master_key_unlocked';
+const MASTER_KEY_SESSION = 'master_key_session';
 const SETTINGS_KEY = 'markdown_notes_settings';
 const VERSION_KEY = 'markdown_notes_versions';
 const SHARED_NOTES_KEY = 'shared_notes_data';
-const BASE_URL = 'https://markdown.toontamilindia.in';
+const SHARED_ALIAS_TOKENS_KEY = 'shared_alias_update_tokens';
+const BASE_URL = window.location.origin || 'https://markdown.toontamilindia.in';
+const API_BASE_URL = window.location.origin || '';
 const CODE_RUNNER_SETTINGS_KEY = 'markdown_code_runner_settings';
 
 const RUNNABLE_LANGUAGE_MAP = {
@@ -154,7 +154,12 @@ let notes = [];
 let currentNoteId = null;
 let viewMode = 'split'; // 'split', 'editor-only', 'preview-only'
 let isMasterKeyUnlocked = false;
+let masterKeySession = '';
 let debounceTimer = null;
+let serverFeatures = {
+    kvEnabled: false,
+    adminEnabled: false
+};
 let settings = {
     autoSave: true,
     spellCheck: false,
@@ -178,12 +183,18 @@ document.addEventListener('DOMContentLoaded', () => {
     loadVersions();
     loadSharedNotes();
     loadMasterKeyState();
+    refreshServerFeatures();
     setupEventListeners();
     applySettings();
     renderNotesList();
     
-    // Check for shared note in URL
+    // Check for explicit shared-note/embed URLs only.
     if (checkSharedNote()) {
+        return;
+    }
+
+    const routedNote = loadHashNote();
+    if (routedNote) {
         return;
     }
     
@@ -333,21 +344,25 @@ function setupEventListeners() {
         debounceTimer = setTimeout(autoSave, 500);
     });
 
-    // Handle URL routing for aliases
+    // Handle URL routing for local hash aliases.
     handleUrlRouting();
 }
 
 // Handle URL Routing for Custom Aliases
 function handleUrlRouting() {
-    const path = window.location.pathname;
-    const hash = window.location.hash.slice(1);
-    
+    loadHashNote();
+}
+
+function loadHashNote() {
+    const hash = decodeURIComponent(window.location.hash.slice(1));
     if (hash) {
         const note = notes.find(n => n.alias === hash || n.id === hash);
         if (note) {
             loadNote(note.id);
+            return true;
         }
     }
+    return false;
 }
 
 // Math Rendering Setup
@@ -414,11 +429,12 @@ async function refreshCodeRunnerStatus() {
         if (!response.ok) throw new Error(`Status endpoint returned ${response.status}`);
 
         const data = await response.json();
-        codeRunnerEnvConfigured = Boolean(data && data.usesJudge0);
-        codeRunnerBackend = data && data.mode === 'judge0' ? 'judge0' : 'piston';
+        // data.mode: 'judge0-public' | 'judge0-self-hosted' | 'piston-self-hosted'
+        codeRunnerBackend = (data && data.mode) ? data.mode : 'judge0-public';
+        codeRunnerEnvConfigured = true;
     } catch (err) {
         codeRunnerEnvConfigured = false;
-        codeRunnerBackend = 'piston';
+        codeRunnerBackend = 'judge0-public';
         console.warn('Code runner status unavailable:', err.message);
     }
 
@@ -434,17 +450,18 @@ function updateCodeRunnerStatusBadge() {
     const statusEl = document.getElementById('judge0Status');
     if (!statusEl) return;
 
-    let text = 'Piston (default)';
-    let configured = false;
+    let text, configured;
 
     if (!codeRunnerSettings.enabled) {
         text = 'Disabled';
-    } else if (codeRunnerBackend === 'judge0' && codeRunnerEnvConfigured) {
-        text = 'Judge0 (self-host)';
-        configured = true;
+        configured = false;
     } else {
-        text = 'Piston (default)';
         configured = true;
+        switch (codeRunnerBackend) {
+            case 'judge0-self-hosted': text = 'Judge0 (self-host)'; break;
+            case 'piston-self-hosted': text = 'Piston (self-host)'; break;
+            default:                  text = 'Judge0 (public)';    break;
+        }
     }
 
     statusEl.textContent = text;
@@ -612,8 +629,107 @@ async function runCodeBlock(codeBlock, langInfo, runBtn) {
 
 // Load Master Key State
 function loadMasterKeyState() {
-    isMasterKeyUnlocked = sessionStorage.getItem(MASTER_KEY_UNLOCKED) === 'true';
+    masterKeySession = sessionStorage.getItem(MASTER_KEY_SESSION) || '';
+    isMasterKeyUnlocked = !!masterKeySession;
     updateMasterKeyUI();
+}
+
+function getAdminHeaders(extraHeaders = {}) {
+    return masterKeySession ? { ...extraHeaders, 'X-Master-Key': masterKeySession } : extraHeaders;
+}
+
+async function refreshServerFeatures() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/status`);
+        const result = await response.json();
+        serverFeatures = {
+            kvEnabled: !!result.kvEnabled,
+            adminEnabled: !!result.adminEnabled
+        };
+    } catch (e) {
+        serverFeatures = { kvEnabled: false, adminEnabled: false };
+    }
+    updateCloudFeatureUI();
+}
+
+function updateCloudFeatureUI() {
+    document.body.classList.toggle('kv-enabled', serverFeatures.kvEnabled);
+    document.body.classList.toggle('kv-disabled', !serverFeatures.kvEnabled);
+
+    const readOnly = document.getElementById('shareReadOnly');
+    if (readOnly) {
+        const label = readOnly.closest('label');
+        readOnly.disabled = !serverFeatures.kvEnabled;
+        if (label) label.classList.toggle('hidden', !serverFeatures.kvEnabled);
+    }
+
+    const manageTab = document.querySelector('.share-tab[onclick*="manage"]');
+    if (manageTab) manageTab.classList.toggle('hidden', !serverFeatures.kvEnabled);
+
+    const description = document.querySelector('.manage-description');
+    if (description) {
+        description.textContent = serverFeatures.kvEnabled
+            ? 'Cloudflare KV enabled. Admin can manage every shared note stored on the server.'
+            : 'Cloudflare KV is not configured. Only local shared-link history is available.';
+    }
+}
+
+function getAliasTokens() {
+    try {
+        return JSON.parse(localStorage.getItem(SHARED_ALIAS_TOKENS_KEY) || '{}');
+    } catch {
+        return {};
+    }
+}
+
+function getAliasToken(alias) {
+    const tokens = getAliasTokens();
+    if (!tokens[alias]) {
+        tokens[alias] = generateAliasRecoveryKey(alias);
+        localStorage.setItem(SHARED_ALIAS_TOKENS_KEY, JSON.stringify(tokens));
+    }
+    return tokens[alias];
+}
+
+function setAliasToken(alias, token) {
+    if (!alias || !token) return;
+    const tokens = getAliasTokens();
+    tokens[alias] = token;
+    localStorage.setItem(SHARED_ALIAS_TOKENS_KEY, JSON.stringify(tokens));
+}
+
+function removeAliasToken(alias) {
+    const tokens = getAliasTokens();
+    delete tokens[alias];
+    localStorage.setItem(SHARED_ALIAS_TOKENS_KEY, JSON.stringify(tokens));
+}
+
+function generateShareToken() {
+    const bytes = new Uint8Array(24);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function generateAliasRecoveryKey(alias) {
+    const salt = generateShareToken();
+    const fingerprintParts = [
+        alias,
+        navigator.userAgent || '',
+        navigator.language || '',
+        screen.width || '',
+        screen.height || '',
+        new Date().getTimezoneOffset()
+    ];
+    const fingerprint = btoa(unescape(encodeURIComponent(fingerprintParts.join('|'))))
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .slice(0, 16);
+    return `mnk_${fingerprint}_${salt}`;
+}
+
+function showAliasRecoveryKey(alias, key) {
+    const message = `Alias recovery key for /${alias}:\n\n${key}\n\nCopy and store this now. It will not be shown again. If you lose it, you cannot update this alias from a new browser unless you use the server admin key.`;
+    navigator.clipboard.writeText(key).catch(() => {});
+    alert(message);
 }
 
 // Create New Note
@@ -769,14 +885,49 @@ function renderNotesList() {
     if (notes.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
-                <div class="empty-state-icon">📝</div>
+                <div class="empty-state-icon">MD</div>
                 <div class="empty-state-text">No notes yet.<br>Create your first note!</div>
             </div>
         `;
         return;
     }
 
-    container.innerHTML = notes.map(note => {
+    const grouped = notes.reduce((acc, note) => {
+        const titleParts = (note.title || '').split('/');
+        const folder = titleParts.length > 1 ? titleParts[0].trim() || 'Notes' : (note.folder || 'Notes');
+        if (!acc[folder]) acc[folder] = [];
+        acc[folder].push(note);
+        return acc;
+    }, {});
+
+    const localHtml = Object.entries(grouped).map(([folder, folderNotes]) => `
+        <div class="note-folder">
+            <div class="note-folder-title">${escapeHtml(folder)}</div>
+            ${folderNotes.map(note => renderNoteListItem(note)).join('')}
+        </div>
+    `).join('');
+
+    const sharedEntries = Object.values(sharedNotesData.notes || {})
+        .filter(note => note.alias || note.shareUrl)
+        .slice(0, 30);
+
+    const sharedHtml = sharedEntries.length ? `
+        <div class="note-folder shared-folder">
+            <div class="note-folder-title">Shared</div>
+            ${sharedEntries.map(note => `
+                <div class="note-item shared-note-item" onclick="window.open('${escapeHtml(note.shareUrl || `${BASE_URL}/${note.alias}`)}', '_blank')">
+                    <div class="note-item-title">${escapeHtml(note.title || 'Shared Note')}</div>
+                    ${note.alias ? `<div class="note-item-alias">/${escapeHtml(note.alias)}</div>` : ''}
+                    <div class="note-item-preview">${escapeHtml(note.shareUrl || '')}</div>
+                </div>
+            `).join('')}
+        </div>
+    ` : '';
+
+    container.innerHTML = localHtml + sharedHtml;
+}
+
+function renderNoteListItem(note) {
         const isActive = note.id === currentNoteId;
         const preview = note.content.substring(0, 100).replace(/[#*`]/g, '');
         const date = new Date(note.updatedAt).toLocaleDateString('en-US', {
@@ -793,7 +944,6 @@ function renderNotesList() {
                 <div class="note-item-preview">${escapeHtml(preview)}</div>
             </div>
         `;
-    }).join('');
 }
 
 // Search Notes
@@ -815,7 +965,7 @@ function searchNotes() {
     if (filtered.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
-                <div class="empty-state-icon">🔍</div>
+                <div class="empty-state-icon">Search</div>
                 <div class="empty-state-text">No notes found</div>
             </div>
         `;
@@ -937,6 +1087,18 @@ function preprocessMath(content) {
         mathBlocks.push({ type: 'display', content: math.trim() });
         return `%%MATHBLOCK${index}%%`;
     });
+
+    result = result.replace(/\\\[([\s\S]*?)\\\]/g, (match, math) => {
+        const index = mathBlocks.length;
+        mathBlocks.push({ type: 'display', content: math.trim() });
+        return `%%MATHBLOCK${index}%%`;
+    });
+
+    result = result.replace(/\\\(([\s\S]*?)\\\)/g, (match, math) => {
+        const index = mathBlocks.length;
+        mathBlocks.push({ type: 'inline', content: math.trim() });
+        return `%%MATHBLOCK${index}%%`;
+    });
     
     // Handle inline math (but not double $$)
     result = result.replace(/\$([^\$\n]+?)\$/g, (match, math) => {
@@ -1010,7 +1172,7 @@ async function renderMermaidDiagrams(container) {
                 pre.innerHTML = `<code class="language-mermaid">${escapeHtml(code)}</code>`;
                 const errorDiv = document.createElement('div');
                 errorDiv.className = 'diagram-error';
-                errorDiv.textContent = `⚠️ Mermaid rendering error: ${err.message}`;
+                errorDiv.textContent = ` Mermaid rendering error: ${err.message}`;
                 pre.insertAdjacentElement('afterend', errorDiv);
             }
         }
@@ -1067,7 +1229,7 @@ async function renderGraphviz(container) {
             console.error('Graphviz error:', err);
             const errorDiv = document.createElement('div');
             errorDiv.className = 'diagram-error';
-            errorDiv.textContent = `⚠️ Graphviz error: ${err.message}`;
+            errorDiv.textContent = ` Graphviz error: ${err.message}`;
             block.parentElement.insertAdjacentElement('afterend', errorDiv);
         }
     }
@@ -1085,7 +1247,7 @@ function renderD2(container) {
             div.className = 'diagram-container d2-placeholder';
             div.innerHTML = `
                 <div style="padding: 2rem; background: var(--bg-tertiary); border-radius: 8px; text-align: center;">
-                    <p>📊 D2 Diagram (requires server-side rendering)</p>
+                    <p>D2 Diagram (requires server-side rendering)</p>
                     <pre style="text-align: left; max-height: 200px; overflow: auto;">${escapeHtml(code)}</pre>
                     <a href="https://play.d2lang.com/?script=${encodedCode}" target="_blank" style="color: var(--accent-primary);">
                         Open in D2 Playground →
@@ -1427,24 +1589,46 @@ function closeMasterKeyModal() {
     document.getElementById('masterKeyStatus').textContent = '';
 }
 
-function verifyMasterKey() {
+async function verifyMasterKey() {
     const input = document.getElementById('masterKeyInput').value;
     const status = document.getElementById('masterKeyStatus');
 
-    if (input === MASTER_KEY) {
+    if (!input) {
+        status.textContent = 'Enter the server admin key.';
+        status.className = 'master-key-status error';
+        return;
+    }
+
+    status.textContent = 'Verifying with server...';
+    status.className = 'master-key-status';
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/list`, {
+            headers: { 'X-Master-Key': input }
+        });
+
+        if (!response.ok) {
+            throw new Error('Invalid admin key or KV is not configured.');
+        }
+
         isMasterKeyUnlocked = true;
-        sessionStorage.setItem(MASTER_KEY_UNLOCKED, 'true');
-        status.textContent = '✅ Master key verified! Full editing access granted.';
+        masterKeySession = input;
+        sessionStorage.setItem(MASTER_KEY_SESSION, input);
+        status.textContent = 'Admin key verified. Server note management unlocked.';
         status.className = 'master-key-status success';
         updateMasterKeyUI();
         
         setTimeout(() => {
             closeMasterKeyModal();
-            showToast('Master key access granted', 'success');
+            showToast('Server admin access granted', 'success');
         }, 1000);
-    } else {
-        status.textContent = '❌ Invalid master key. Please try again.';
+    } catch (e) {
+        isMasterKeyUnlocked = false;
+        masterKeySession = '';
+        sessionStorage.removeItem(MASTER_KEY_SESSION);
+        status.textContent = e.message || 'Could not verify admin key.';
         status.className = 'master-key-status error';
+        updateMasterKeyUI();
     }
 }
 
@@ -1640,20 +1824,25 @@ function isNoteShared(noteId, alias) {
 // ==================== KV API Functions ====================
 
 // Save note to KV storage via API
-async function saveToKV(alias, data, title) {
+async function saveToKV(alias, data, title, content, readOnly) {
     try {
-        const response = await fetch(`${BASE_URL}/api/share`, {
+        const existingTokens = getAliasTokens();
+        const isNewAliasKey = !existingTokens[alias];
+        const updateToken = getAliasToken(alias);
+        const response = await fetch(`${API_BASE_URL}/api/share`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ alias, data, title })
+            body: JSON.stringify({ alias, data, title, content, readOnly, updateToken })
         });
         
         const result = await response.json();
         
         if (result.success) {
-            return { success: true, url: `${BASE_URL}/${alias}` };
+            setAliasToken(alias, updateToken);
+            return { success: true, url: `${BASE_URL}/${alias}`, recoveryKey: updateToken, isNewAliasKey };
         } else {
-            return { success: false, error: result.error };
+            if (isNewAliasKey) removeAliasToken(alias);
+            return { success: false, error: result.error, status: response.status };
         }
     } catch (e) {
         console.error('KV save error:', e);
@@ -1664,7 +1853,7 @@ async function saveToKV(alias, data, title) {
 // Get note from KV storage via API
 async function getFromKV(alias) {
     try {
-        const response = await fetch(`${BASE_URL}/api/note/${alias}`);
+        const response = await fetch(`${API_BASE_URL}/api/note/${alias}`);
         const result = await response.json();
         
         if (result.success) {
@@ -1680,7 +1869,7 @@ async function getFromKV(alias) {
 // Check if alias is available
 async function checkAliasAvailable(alias) {
     try {
-        const response = await fetch(`${BASE_URL}/api/check/${alias}`);
+        const response = await fetch(`${API_BASE_URL}/api/check/${alias}`);
         const result = await response.json();
         return result.available;
     } catch (e) {
@@ -1716,8 +1905,8 @@ async function showShareModal() {
     let displayUrl = shareUrl;
     let kvSaved = false;
     
-    // If alias exists, save to KV and use short URL
-    if (note.alias && note.alias.trim()) {
+    // If alias exists and KV is available, save to KV and use short URL
+    if (serverFeatures.kvEnabled && note.alias && note.alias.trim()) {
         const alias = note.alias.trim();
         
         // Show loading state
@@ -1726,19 +1915,54 @@ async function showShareModal() {
         switchShareTab('link');
         
         // Save to KV
-        const result = await saveToKV(alias, compressedData, note.title);
+        const readOnly = document.getElementById('shareReadOnly')?.checked !== false;
+        const result = await saveToKV(alias, compressedData, note.title, note.content, readOnly);
         
         if (result.success) {
             displayUrl = `${BASE_URL}/${alias}`;
             kvSaved = true;
+            if (result.isNewAliasKey && result.recoveryKey) {
+                showAliasRecoveryKey(alias, result.recoveryKey);
+            }
             showToast(`Saved! Share link: ${displayUrl}`, 'success');
         } else {
-            showToast(`KV save failed: ${result.error}. Using fallback URL.`, 'warning');
-            displayUrl = shareUrl;
+            if (result.status === 409 || result.status === 423) {
+                const recoveryKey = prompt(`/${alias} already exists. Paste the alias recovery key to update it, or leave blank to use a fallback link.`);
+                if (recoveryKey && recoveryKey.trim()) {
+                    setAliasToken(alias, recoveryKey.trim());
+                    const retry = await saveToKV(alias, compressedData, note.title, note.content, readOnly);
+                    if (retry.success) {
+                        displayUrl = `${BASE_URL}/${alias}`;
+                        kvSaved = true;
+                        showToast(`Updated /${alias}`, 'success');
+                    } else {
+                        removeAliasToken(alias);
+                        showToast(`KV save failed: ${retry.error}. Using fallback URL.`, 'warning');
+                        displayUrl = shareUrl;
+                    }
+                } else {
+                    showToast('Using fallback URL. Alias was not updated.', 'warning');
+                    displayUrl = shareUrl;
+                }
+            } else {
+                showToast(`KV save failed: ${result.error}. Using fallback URL.`, 'warning');
+                displayUrl = shareUrl;
+            }
         }
     }
     
     document.getElementById('shareUrl').value = displayUrl;
+    const rawShareBox = document.getElementById('rawShareUrlBox');
+    const rawShareInput = document.getElementById('rawShareUrl');
+    if (rawShareBox && rawShareInput) {
+        if (kvSaved && note.alias) {
+            rawShareInput.value = `${BASE_URL}/raw/${note.alias.trim()}`;
+            rawShareBox.classList.remove('hidden');
+        } else {
+            rawShareInput.value = '';
+            rawShareBox.classList.add('hidden');
+        }
+    }
     
     // Track locally
     addToSharedNotes(note, displayUrl, compressedData);
@@ -1760,7 +1984,7 @@ async function showShareModal() {
         let infoText = `Data: ${sizeKB} KB`;
         if (note.alias) {
             infoText += ` | Alias: ${note.alias}`;
-            infoText += kvSaved ? ' ✅ Saved to server' : ' ⚠️ Local only';
+            infoText += kvSaved ? ' | Saved to server' : ' | Local fallback only';
         }
         sizeInfo.textContent = infoText;
         sizeInfo.style.color = kvSaved ? '#3fb950' : '#8b949e';
@@ -1776,10 +2000,13 @@ async function showShareModal() {
 function updateShareStatus(shareId) {
     const sharedNote = sharedNotesData.notes[shareId];
     if (sharedNote) {
+        const viewsHtml = serverFeatures.kvEnabled && sharedNote.alias
+            ? `<span class="share-status-info">Views: ${sharedNote.views || 0}</span>`
+            : '<span class="share-status-info">Local fallback link</span>';
         const statusHtml = `
             <div class="share-status">
-                <span class="share-status-badge shared">✓ Shared</span>
-                <span class="share-status-info">Views: ${sharedNote.views || 0}</span>
+                <span class="share-status-badge shared">Shared</span>
+                ${viewsHtml}
             </div>
         `;
         const statusContainer = document.getElementById('shareStatusContainer');
@@ -1804,7 +2031,11 @@ function switchShareTab(tab) {
     
     // If showing manage tab, render shared links list
     if (tab === 'manage') {
-        renderSharedLinksList();
+        if (serverFeatures.kvEnabled) {
+            refreshSharedList();
+        } else {
+            renderSharedLinksList();
+        }
     }
 }
 
@@ -1812,7 +2043,14 @@ function switchShareTab(tab) {
 async function refreshSharedList() {
     if (!isMasterKeyUnlocked) {
         showToast('Unlock master key to view server list', 'warning');
-        renderSharedLinksList();
+        const container = document.getElementById('sharedLinksList');
+        if (container) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">Admin</div>
+                    <div class="empty-state-text">Unlock the server admin key to manage KV notes.</div>
+                </div>`;
+        }
         return;
     }
     
@@ -1822,8 +2060,8 @@ async function refreshSharedList() {
     }
     
     try {
-        const response = await fetch(`${BASE_URL}/api/list`, {
-            headers: { 'X-Master-Key': MASTER_KEY }
+        const response = await fetch(`${API_BASE_URL}/api/list`, {
+            headers: getAdminHeaders()
         });
         
         if (response.ok) {
@@ -1838,8 +2076,14 @@ async function refreshSharedList() {
         console.error('Failed to fetch KV list:', e);
     }
     
-    showToast('Could not load from server, showing local data', 'warning');
-    renderSharedLinksList();
+    showToast('Could not load server KV notes', 'error');
+    if (container) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">KV</div>
+                <div class="empty-state-text">Could not load Cloudflare KV notes.</div>
+            </div>`;
+    }
 }
 
 // Render shared links from KV storage
@@ -1850,7 +2094,7 @@ function renderKVSharedList(kvNotes) {
     if (kvNotes.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
-                <div class="empty-state-icon">☁️</div>
+                <div class="empty-state-icon">KV</div>
                 <div class="empty-state-text">No notes on server</div>
                 <p style="color: #8b949e; font-size: 0.9rem; margin-top: 10px;">Share a note with an alias to save it to KV</p>
             </div>`;
@@ -1859,7 +2103,7 @@ function renderKVSharedList(kvNotes) {
     
     let html = `
         <div style="background: #238636; color: white; padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; font-size: 0.9rem;">
-            ☁️ ${kvNotes.length} note(s) stored in Cloudflare KV
+            ${kvNotes.length} note(s) stored in Cloudflare KV
         </div>
     `;
     
@@ -1870,15 +2114,18 @@ function renderKVSharedList(kvNotes) {
                 <div class="shared-link-info">
                     <div class="shared-link-title">${escapeHtml(note.title)}</div>
                     <div class="shared-link-meta">
-                        <span>📅 ${createdDate}</span>
-                        <span style="color: #58a6ff;">🏷️ /${note.alias}</span>
-                        <span>👁️ ${note.views || 0} views</span>
+                        <span>${createdDate}</span>
+                        <span style="color: var(--accent-primary);">/${note.alias}</span>
+                        <span>${note.views || 0} views</span>
+                        <span>${note.likes || 0} hearts</span>
+                        <span>${note.readOnly ? 'read-only' : 'editable'}</span>
                     </div>
                     <div class="shared-link-url" style="font-size: 0.85rem; color: #3fb950;">${BASE_URL}/${note.alias}</div>
                 </div>
                 <div class="shared-link-actions">
-                    <button onclick="copyToClip('${BASE_URL}/${note.alias}')" class="btn-small">📋 Copy</button>
-                    <button onclick="deleteFromKV('${note.alias}')" class="btn-small danger">🗑️ Delete</button>
+                    <button onclick="copyToClip('${BASE_URL}/${note.alias}')" class="btn-small">Copy</button>
+                    <button onclick="copyToClip('${BASE_URL}/raw/${note.alias}')" class="btn-small">Raw</button>
+                    <button onclick="deleteFromKV('${note.alias}')" class="btn-small danger">Delete</button>
                 </div>
             </div>
         `;
@@ -1899,12 +2146,13 @@ async function deleteFromKV(alias) {
     if (!confirm(`Delete "${alias}" from server? This cannot be undone.`)) return;
     
     try {
-        const response = await fetch(`${BASE_URL}/api/note/${alias}`, {
+        const response = await fetch(`${API_BASE_URL}/api/note/${alias}`, {
             method: 'DELETE',
-            headers: { 'X-Master-Key': MASTER_KEY }
+            headers: getAdminHeaders()
         });
         
         if (response.ok) {
+            removeAliasToken(alias);
             showToast('Deleted from server', 'success');
             refreshSharedList();
         } else {
@@ -1926,7 +2174,7 @@ function renderSharedLinksList() {
     if (sharedNotes.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
-                <div class="empty-state-icon">🔗</div>
+                <div class="empty-state-icon"></div>
                 <div class="empty-state-text">No shared links yet</div>
                 <p style="color: #8b949e; font-size: 0.9rem; margin-top: 10px;">Share a note with an alias to save it to the server</p>
             </div>`;
@@ -1934,9 +2182,10 @@ function renderSharedLinksList() {
     }
     
     let html = `
-        <div style="background: #1c2128; border: 1px solid #30363d; border-radius: 8px; padding: 12px; margin-bottom: 16px;">
-            <p style="color: #8b949e; font-size: 0.9rem; margin: 0;">
-                📊 ${sharedNotes.length} note(s) in local storage
+        <div style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0;">
+                ${sharedNotes.length} note(s) in local shared-link history
+                ${serverFeatures.kvEnabled ? '' : ' (server KV unavailable)'}
             </p>
         </div>
     `;
@@ -1949,13 +2198,14 @@ function renderSharedLinksList() {
                 <div class="shared-link-info">
                     <div class="shared-link-title">${escapeHtml(note.title)}</div>
                     <div class="shared-link-meta">
-                        <span>📅 ${sharedDate}</span>
-                        ${note.alias ? `<span style="color: #3fb950;">🏷️ /${note.alias} ✅</span>` : '<span style="color: #f0883e;">⚠️ No alias (not on server)</span>'}
+                        <span>${sharedDate}</span>
+                        ${note.alias ? `<span style="color: var(--accent-secondary);">/${note.alias}</span>` : '<span style="color: var(--accent-warning);">fallback URL only</span>'}
                     </div>
                 </div>
                 <div class="shared-link-actions">
-                    <button onclick="copySharedLinkById('${shareId}')" class="btn-small">📋 Copy</button>
-                    <button onclick="unshareNote('${shareId}')" class="btn-small danger">🗑️ Remove</button>
+                    <button onclick="copySharedLinkById('${shareId}')" class="btn-small">Copy</button>
+                    ${note.alias && serverFeatures.kvEnabled ? `<button onclick="copyToClip('${BASE_URL}/raw/${note.alias}')" class="btn-small">Raw</button>` : ''}
+                    <button onclick="unshareNote('${shareId}')" class="btn-small danger">Remove</button>
                 </div>
             </div>
         `;
@@ -2169,6 +2419,17 @@ function copyShareLink() {
     });
 }
 
+function copyRawShareLink() {
+    const url = document.getElementById('rawShareUrl').value;
+    if (!url) {
+        showToast('Raw link is only available for KV aliases', 'warning');
+        return;
+    }
+    navigator.clipboard.writeText(url).then(() => {
+        showToast('Raw link copied', 'success');
+    });
+}
+
 function copyEmbedCode() {
     const code = document.getElementById('embedCode').value;
     navigator.clipboard.writeText(code).then(() => {
@@ -2194,6 +2455,16 @@ function shareToWhatsApp() {
     const url = document.getElementById('shareUrl').value;
     const text = encodeURIComponent(`${note.title}\n${url}`);
     window.open(`https://wa.me/?text=${text}`, '_blank');
+}
+
+function shareToInstagram() {
+    const url = document.getElementById('shareUrl').value;
+    navigator.clipboard.writeText(url).then(() => {
+        showToast('Link copied for Instagram', 'success');
+        window.open('https://www.instagram.com/', '_blank');
+    }).catch(() => {
+        window.open('https://www.instagram.com/', '_blank');
+    });
 }
 
 function shareToTelegram() {
@@ -2434,6 +2705,7 @@ function applySettings() {
     
     // Apply font
     editor.style.fontFamily = settings.font;
+    editor.classList.toggle('line-numbers-enabled', !!settings.lineNumbers);
     
     // Apply spell check
     editor.spellcheck = settings.spellCheck;
@@ -2456,6 +2728,9 @@ function applySettings() {
     
     const spellCheck = document.getElementById('optionSpellCheck');
     if (spellCheck) spellCheck.checked = settings.spellCheck;
+
+    const lineNumbers = document.getElementById('optionLineNumbers');
+    if (lineNumbers) lineNumbers.checked = settings.lineNumbers;
 }
 
 function toggleAutoSave() {
@@ -2473,8 +2748,9 @@ function toggleSpellCheck() {
 
 function toggleLineNumbers() {
     settings.lineNumbers = document.getElementById('optionLineNumbers').checked;
+    document.getElementById('markdownEditor').classList.toggle('line-numbers-enabled', settings.lineNumbers);
     saveSettings();
-    showToast('Line numbers toggled (requires page refresh)', 'info');
+    showToast(`Line number gutter ${settings.lineNumbers ? 'enabled' : 'disabled'}`, 'info');
 }
 
 function changeTheme() {
@@ -2596,7 +2872,7 @@ function showVersionHistory() {
     const container = document.getElementById('versionList');
     
     if (versions.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📜</div><div class="empty-state-text">No version history available</div></div>';
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon"></div><div class="empty-state-text">No version history available</div></div>';
     } else {
         container.innerHTML = versions.map((v, idx) => {
             const date = new Date(v.timestamp).toLocaleString();
@@ -2673,28 +2949,14 @@ function checkSharedNote() {
     const params = new URLSearchParams(window.location.search);
     const encodedData = params.get('d');
     const isEmbed = params.get('embed') === 'true';
-    
-    // Also check hash for backwards compatibility with alias
-    const hash = window.location.hash.slice(1);
-    
+
     let sharedNote = null;
     
     // First try URL-encoded data (new method)
     if (encodedData) {
         sharedNote = parseNoteFromURL();
     }
-    
-    // Fallback: check local notes by alias/hash
-    if (!sharedNote && hash) {
-        const localNote = notes.find(n => n.alias === hash || n.id === hash);
-        if (localNote) {
-            sharedNote = {
-                title: localNote.title,
-                content: localNote.content
-            };
-        }
-    }
-    
+
     if (!sharedNote) {
         return false;
     }
@@ -2893,6 +3155,64 @@ async function importFromUrl() {
         showToast('Content imported from URL', 'success');
     } catch (err) {
         showToast('Failed to fetch content from URL. Make sure it\'s a raw file URL.', 'error');
+    }
+}
+
+async function restoreKvAlias() {
+    const alias = document.getElementById('restoreKvAlias').value.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+    const recoveryKey = document.getElementById('restoreKvKey').value.trim();
+
+    if (!alias) {
+        showToast('Enter a KV alias to restore', 'error');
+        return;
+    }
+
+    try {
+        const noteResult = await getFromKV(alias);
+        if (!noteResult || !noteResult.data) {
+            showToast('KV note not found', 'error');
+            return;
+        }
+
+        if (recoveryKey) {
+            const verifyResponse = await fetch(`${API_BASE_URL}/api/verify-key/${alias}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ updateToken: recoveryKey })
+            });
+            const verifyResult = await verifyResponse.json().catch(() => ({}));
+            if (!verifyResponse.ok || !verifyResult.success) {
+                showToast(verifyResult.error || 'Invalid alias recovery key', 'error');
+                return;
+            }
+            setAliasToken(alias, recoveryKey);
+        }
+
+        const note = decompressFromURL(noteResult.data);
+        if (!note) {
+            showToast('Could not decode KV note content', 'error');
+            return;
+        }
+
+        const parsed = JSON.parse(note);
+        const restoredNote = {
+            id: generateId(),
+            title: parsed.t || noteResult.title || alias,
+            alias,
+            content: parsed.c || '',
+            createdAt: noteResult.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        notes.unshift(restoredNote);
+        saveNotes();
+        renderNotesList();
+        loadNote(restoredNote.id);
+        closeImportModal();
+
+        showToast(recoveryKey ? 'KV note restored with edit key' : 'KV note imported read-only locally', 'success');
+    } catch (e) {
+        showToast('Failed to restore KV note: ' + e.message, 'error');
     }
 }
 

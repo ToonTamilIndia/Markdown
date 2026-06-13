@@ -1,4 +1,15 @@
-# 📚 Markdown Notes - Complete Documentation
+<div align="center">
+
+# Markdown Notes Documentation
+
+[![Typing SVG](https://readme-typing-svg.demolab.com?font=Inter&weight=600&size=24&pause=1000&color=0078D4&center=true&vCenter=true&width=760&lines=Complete+Markdown+workspace+guide;KV+sharing%2C+raw+links%2C+and+admin+controls;AI+Ask%2C+Edit%2C+and+Agent+workflows)](https://git.io/typing-svg)
+
+![Cloudflare KV](https://img.shields.io/badge/Storage-Cloudflare_KV-F38020?logo=cloudflare&logoColor=white)
+![KaTeX](https://img.shields.io/badge/Math-KaTeX-0078D4)
+![Mermaid](https://img.shields.io/badge/Diagrams-Mermaid-ff3670)
+![AI](https://img.shields.io/badge/AI-Ask_Edit_Agent-3fb950)
+
+</div>
 
 > **Last Updated**: February 17, 2026
 
@@ -31,22 +42,22 @@
 ## Features Overview
 
 ### Core Features
-✅ **Real-time Preview** - See changes as you type  
-✅ **Local Storage** - Notes saved automatically  
-✅ **Share Links** - Generate public URLs for notes  
-✅ **Dark Theme** - Easy on the eyes  
-✅ **Markdown Support** - Full GFM syntax  
-✅ **Math Equations** - KaTeX rendering  
-✅ **Syntax Highlighting** - Code blocks with Highlight.js & Prism  
+ **Real-time Preview** - See changes as you type  
+ **Local Storage** - Notes saved automatically  
+ **Share Links** - Generate public URLs for notes  
+ **Dark Theme** - Easy on the eyes  
+ **Markdown Support** - Full GFM syntax  
+ **Math Equations** - KaTeX rendering  
+ **Syntax Highlighting** - Code blocks with Highlight.js & Prism  
 
 ### Advanced Features
-✅ **AI Assistant** - OpenAI, Gemini, OpenRouter support  
-✅ **Diagrams** - Mermaid, PlantUML, Graphviz, D2  
-✅ **Charts** - Chart.js, Plotly, Vega, Vega-Lite  
-✅ **Agent Mode** - Auto-create/edit files with AI  
-✅ **Multiple API Keys** - Store and switch between providers  
-✅ **Dynamic Models** - Auto-fetch model lists  
-✅ **Code Runner** - Execute runnable code fences via Piston (default) or Judge0 self-host  
+ **AI Assistant** - OpenAI, Gemini, OpenRouter support  
+ **Diagrams** - Mermaid, PlantUML, Graphviz, D2  
+ **Charts** - Chart.js, Plotly, Vega, Vega-Lite  
+ **Agent Mode** - Auto-create/edit files with AI  
+ **Multiple API Keys** - Store and switch between providers  
+ **Dynamic Models** - Auto-fetch model lists  
+ **Code Runner** - Execute runnable code fences via Piston (default) or Judge0 self-host  
 
 ---
 
@@ -55,9 +66,9 @@
 ### Setup
 
 1. **Open AI Settings**
-   - Click the AI button (🤖) in the bottom-right
+   - Click the AI button () in the bottom-right
    - Or press `Ctrl+I`
-   - Click "⚙️ Settings"
+   - Click " Settings"
 
 2. **Configure API Keys**
    - Add keys for one or more providers:
@@ -72,11 +83,11 @@
 ### Using AI Features
 
 #### Quick Actions
-- **✨ Improve** - Enhance text quality
-- **✓ Fix Grammar** - Correct errors
-- **📝 Expand** - Add more details
-- **📄 Summarize** - Make concise
-- **💡 Explain** - Simplify concepts
+- **Improve** - Enhance text quality
+- **Fix Grammar** - Correct errors
+- **Expand** - Add more details
+- **Summarize** - Make concise
+- **Explain** - Simplify concepts
 
 #### Agent Mode (Auto-Create/Edit)
 1. Enable **Agent Mode** in settings
@@ -105,12 +116,12 @@ Generate a comparison table of Python vs JavaScript
 
 ### Templates
 Quick prompts for common tasks:
-- 📚 Create a tutorial
-- 📊 Generate a diagram
-- ✍️ Write a blog post
-- 💻 Explain code
-- 📝 Create a list
-- ⚖️ Compare topics
+- Create a tutorial
+- Generate a diagram
+- Write a blog post
+- Explain code
+- Create a list
+- Compare topics
 
 ### Keyboard Shortcuts
 - `Ctrl+I` - Toggle AI panel
@@ -343,10 +354,10 @@ MIT License - Feel free to use and modify!
 
 ## Support
 
-- 📧 Email: toontamilind@gmail.com
-- 🐛 Issues: GitHub Issues
-- 💬 Discussions: GitHub Discussions
+- Email: toontamilind@gmail.com
+- Issues: GitHub Issues
+- Discussions: GitHub Discussions
 
 ---
 
-*Made with ❤️ by ToonTamilIndia*
+*Made with  by ToonTamilIndia*

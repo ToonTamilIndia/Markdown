@@ -1,15 +1,25 @@
-# 🎉 Major Updates Summary
+<div align="center">
+
+# Markdown Notes Changelog
+
+[![Typing SVG](https://readme-typing-svg.demolab.com?font=Inter&weight=600&size=24&pause=1000&color=3FB950&center=true&vCenter=true&width=720&lines=Security%2C+sharing%2C+and+AI+updates;Theme-safe+viewer+and+editor+polish;Cloudflare+KV+admin+management)](https://git.io/typing-svg)
+
+![Status](https://img.shields.io/badge/status-active-3fb950)
+![Security](https://img.shields.io/badge/security-server_verified-0078D4)
+![Sharing](https://img.shields.io/badge/sharing-KV_aliases-F38020)
+
+</div>
 
 ## What's Changed
 
-### 📋 1. Documentation Consolidation
+### 1. Documentation Consolidation
 **Before**: 9 separate MD files  
 **After**: 2 streamlined files
 
-- ✅ Created `DOCUMENTATION.md` - Complete user guide in one place
-- ✅ Simplified `README.md` - Quick overview and links
+- Created `DOCUMENTATION.md` - Complete user guide in one place
+- Simplified `README.md` - Quick overview and links
 
-### 🖱️ 2. Fixed Scrolling Issues
+### 2. Fixed Scrolling Issues
 **Problem**: Scrolling felt choppy or didn't work smoothly  
 **Solution**: Added custom scrollbar styling with smooth scrolling
 
@@ -19,17 +29,17 @@
 - `.ai-panel-body` - Optimized scrolling in AI panel
 - All scrollbars now have consistent styling across the app
 
-### 🤖 3. Enhanced AI Settings
+### 3. Enhanced AI Settings
 
 #### Multiple API Keys Support
-- ✅ Store API keys for all providers simultaneously
-- ✅ Visual status indicators (✓ Configured / Not configured)
-- ✅ Switch between providers without re-entering keys
+- Store API keys for all providers simultaneously
+- Visual status indicators (Configured / Not configured)
+- Switch between providers without re-entering keys
 
 #### Dynamic Model Fetching
-- ✅ Auto-fetch available models from API endpoints
-- ✅ Refresh button to update model list
-- ✅ Fallback to default models if fetch fails
+- Auto-fetch available models from API endpoints
+- Refresh button to update model list
+- Fallback to default models if fetch fails
 
 **Supported APIs**:
 - **OpenAI**: Fetches from `/v1/models` endpoint
@@ -40,9 +50,9 @@
 **NEW FEATURE**: AI can automatically create/edit notes in the left panel
 
 **Settings**:
-- ✅ **Enable Agent Mode** - Let AI write directly to editor
-- ✅ **Auto-save AI changes** - Automatically save generated content
-- ✅ **Confirm before applying** - Show confirmation dialog
+- **Enable Agent Mode** - Let AI write directly to editor
+- **Auto-save AI changes** - Automatically save generated content
+- **Confirm before applying** - Show confirmation dialog
 
 **How it works**:
 1. Enable Agent Mode in settings
@@ -53,7 +63,7 @@
 3. AI generates content and writes it to the left editor
 4. Optionally auto-saves the note
 
-### 🎨 4. UI Improvements
+### 4. UI Improvements
 
 #### AI Settings Modal
 - Larger modal (`modal-large` class) for better readability
@@ -70,7 +80,7 @@
 
 ---
 
-## 🔧 Technical Changes
+## Technical Changes
 
 ### CSS Updates
 ```css
@@ -133,7 +143,7 @@ showAISettings() // Enhanced to load all settings
   <!-- Model selector with refresh -->
   <div class="model-selector">
     <select id="aiModelSelect"></select>
-    <button onclick="refreshModels()">🔄</button>
+    <button onclick="refreshModels()"></button>
   </div>
   
   <!-- Agent mode options -->
@@ -142,13 +152,13 @@ showAISettings() // Enhanced to load all settings
   <input type="checkbox" id="aiConfirmChanges">
   
   <!-- Test button -->
-  <button onclick="testAIConnection()">🧪 Test Connection</button>
+  <button onclick="testAIConnection()"> Test Connection</button>
 </div>
 ```
 
 ---
 
-## 📊 File Changes Summary
+## File Changes Summary
 
 ### Removed Files (7)
 - AI_GUIDE.md
@@ -171,34 +181,34 @@ showAISettings() // Enhanced to load all settings
 
 ---
 
-## 🎯 Benefits
+## Benefits
 
 ### User Experience
-- ✅ **Faster**: Less documentation to navigate
-- ✅ **Smoother**: Better scrolling performance
-- ✅ **Smarter**: AI can auto-create notes
-- ✅ **Flexible**: Store multiple API keys
-- ✅ **Easier**: One-click model refresh
+- **Faster**: Less documentation to navigate
+- **Smoother**: Better scrolling performance
+- **Smarter**: AI can auto-create notes
+- **Flexible**: Store multiple API keys
+- **Easier**: One-click model refresh
 
 ### Developer Experience
-- ✅ **Cleaner**: Reduced from 9 docs to 2
-- ✅ **Maintainable**: All info in DOCUMENTATION.md
-- ✅ **Extensible**: Easy to add new AI providers
-- ✅ **Testable**: Test connection button for debugging
+- **Cleaner**: Reduced from 9 docs to 2
+- **Maintainable**: All info in DOCUMENTATION.md
+- **Extensible**: Easy to add new AI providers
+- **Testable**: Test connection button for debugging
 
 ---
 
-## 🚀 How to Use New Features
+## How to Use New Features
 
 ### Multiple API Keys
-1. Open AI Settings (`Ctrl+I` → ⚙️ Settings)
+1. Open AI Settings (`Ctrl+I` →  Settings)
 2. Add keys for any/all providers
 3. Switch providers anytime - keys are remembered
 4. Status badges show which keys are configured
 
 ### Dynamic Models
 1. Select a provider
-2. Click 🔄 Refresh button
+2. Click  Refresh button
 3. Models are fetched from API
 4. Select your preferred model
 
@@ -215,13 +225,13 @@ showAISettings() // Enhanced to load all settings
 
 ### Test Connection
 1. Configure API key
-2. Click "🧪 Test Connection"
+2. Click " Test Connection"
 3. AI sends a test message
 4. Shows success/error dialog
 
 ---
 
-## 📝 Migration Guide
+## Migration Guide
 
 ### For Users
 **Nothing breaks!** All existing features work exactly the same.
@@ -240,13 +250,13 @@ If you've customized the code:
 
 ---
 
-## 🐛 Known Issues
+## Known Issues
 
-None! All features tested and working. ✅
+None! All features tested and working. 
 
 ---
 
-## 🔮 Future Enhancements
+## Future Enhancements
 
 Possible additions:
 - Custom model endpoints
@@ -257,7 +267,7 @@ Possible additions:
 
 ---
 
-## 📞 Support
+## Support
 
 Questions? Issues?
 - See [DOCUMENTATION.md](DOCUMENTATION.md) for guides
@@ -266,4 +276,4 @@ Questions? Issues?
 
 ---
 
-**Enjoy the new features! 🎉**
+**Enjoy the new features! **

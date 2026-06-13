@@ -1,9 +1,19 @@
-# Cloudflare KV Setup for Markdown Notes
+<div align="center">
+
+# Cloudflare KV Setup
+
+[![Typing SVG](https://readme-typing-svg.demolab.com?font=Inter&weight=600&size=24&pause=1000&color=F38020&center=true&vCenter=true&width=720&lines=Bind+SHARED_NOTES+to+your+Worker;Store+MASTER_KEY+as+a+secret;Enable+aliases%2C+raw+links%2C+views%2C+and+hearts)](https://git.io/typing-svg)
+
+![Cloudflare](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)
+![KV](https://img.shields.io/badge/KV-SHARED_NOTES-0078D4)
+![Secret](https://img.shields.io/badge/MASTER_KEY-secret-3fb950)
+
+</div>
 
 ## Step 1: Create KV Namespace
 
 1. Go to [Cloudflare Dashboard](https://dash.cloudflare.com)
-2. Select your account → **Workers & Pages** → **KV**
+2. Select your account → **Workers & Pages**→ **KV**
 3. Click **Create a namespace**
 4. Name it: `SHARED_NOTES`
 5. Click **Add**
@@ -11,7 +21,7 @@
 ## Step 2: Bind KV to Your Pages Project
 
 1. Go to **Workers & Pages** → Select your project (`markdown.toontamilindia.in`)
-2. Go to **Settings** → **Functions** → **KV namespace bindings**
+2. Go to **Settings**→ **Functions**→ **KV namespace bindings**
 3. Click **Add binding**
 4. Set:
    - **Variable name**: `SHARED_NOTES`
@@ -21,7 +31,7 @@
 ## Step 3: Set Environment Variables
 
 1. Go to **Workers & Pages** → Select your project
-2. Go to **Settings** → **Environment variables**
+2. Go to **Settings**→ **Environment variables**
 3. Click **Add variables**
 4. Add:
    - **Variable name**: `MASTER_KEY`

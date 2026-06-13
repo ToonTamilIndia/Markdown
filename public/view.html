@@ -96,6 +96,7 @@
             border: 1px solid var(--border-color);
         }
         .view-btn-secondary:hover { background: var(--bg-hover); border-color: var(--accent-primary); }
+        .hidden { display: none !important; }
 
         /* Container */
         .view-container {
@@ -107,6 +108,17 @@
         .note-header { margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color); }
         .note-title { font-size: 1.8rem; font-weight: 600; color: #e0e0e0; margin-bottom: 6px; }
         .note-meta { color: var(--text-muted); font-size: 12px; display: flex; gap: 12px; }
+        .view-like-btn {
+            border: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border-radius: var(--radius-sm);
+            padding: 2px 8px;
+            cursor: pointer;
+            font: inherit;
+        }
+        .view-like-btn:hover { border-color: var(--accent-primary); }
+        .view-like-btn:disabled { opacity: .7; cursor: default; }
 
         /* Note Content (mirrors preview-content from main app) */
         .note-content { color: var(--text-primary); line-height: 1.6; font-size: 15px; }
@@ -203,6 +215,222 @@
         /* Status Bar */
         .view-status { height: 22px; display: flex; align-items: center; padding: 0 12px; background: var(--accent-primary); color: #fff; font-size: 12px; position: fixed; bottom: 0; left: 0; right: 0; z-index: 5; }
 
+        body.theme-light {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f3f3f3;
+            --bg-tertiary: #e8e8e8;
+            --bg-hover: #e4e4e4;
+            --bg-input: #ffffff;
+            --text-primary: #1e1e1e;
+            --text-secondary: #616161;
+            --text-muted: #737373;
+            --border-color: #d4d4d4;
+            --accent-primary: #0078d4;
+        }
+        body.theme-light .note-title,
+        body.theme-light .note-content h1,
+        body.theme-light .note-content h2,
+        body.theme-light .note-content h3,
+        body.theme-light .note-content h4,
+        body.theme-light .note-content h5,
+        body.theme-light .note-content h6 { color: #1e1e1e; }
+        body.theme-light .note-content pre { background: #f8f8f8; }
+
+        body.theme-sepia {
+            --bg-primary: #f4ecd8;
+            --bg-secondary: #e8dfc8;
+            --bg-tertiary: #d9ccb0;
+            --bg-hover: #d0c3a8;
+            --bg-input: #f4ecd8;
+            --text-primary: #4d3a2c;
+            --text-secondary: #6f5a47;
+            --text-muted: #8a7663;
+            --border-color: #c8b99a;
+            --accent-primary: #7b5d12;
+        }
+
+        body.theme-nord {
+            --bg-primary: #2e3440;
+            --bg-secondary: #3b4252;
+            --bg-tertiary: #434c5e;
+            --bg-hover: #4c566a;
+            --bg-input: #3b4252;
+            --text-primary: #eceff4;
+            --text-secondary: #d8dee9;
+            --text-muted: #a0a8b7;
+            --border-color: #4c566a;
+            --accent-primary: #88c0d0;
+        }
+
+        /* ── Interactive Code Runner — VS Code style ─────────────── */
+        .code-runner-wrap {
+            margin: 16px 0;
+            border: 1px solid #3c3c3c;
+            border-radius: 4px;
+            overflow: hidden;
+            background: #1e1e1e;
+            font-family: 'Cascadia Code', 'Fira Code', Consolas, 'Courier New', monospace;
+            box-shadow: 0 2px 8px rgba(0,0,0,.35);
+        }
+        /* Tab bar — mirrors VS Code's editor tab row */
+        .code-runner-header {
+            display: flex;
+            align-items: stretch;
+            background: #252526;
+            border-bottom: 1px solid #3c3c3c;
+            min-height: 35px;
+            padding: 0;
+            gap: 0;
+        }
+        .code-runner-tab {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 0 14px;
+            font-size: 12px;
+            color: #cccccc;
+            border-right: 1px solid #3c3c3c;
+            border-bottom: 2px solid transparent;
+            white-space: nowrap;
+            user-select: none;
+        }
+        .code-runner-tab.active {
+            border-bottom-color: #007acc;
+            background: #1e1e1e;
+            color: #ffffff;
+        }
+        .code-runner-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .code-runner-spacer { flex: 1; }
+        .code-runner-actions {
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            gap: 4px;
+        }
+        /* Run button — VS Code green play */
+        .code-run-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 11px;
+            border: none;
+            border-radius: 3px;
+            background: #388a34;
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 500;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            cursor: pointer;
+            transition: background .12s;
+            white-space: nowrap;
+        }
+        .code-run-btn:hover:not(:disabled) { background: #4caf4c; }
+        .code-run-btn:active:not(:disabled) { background: #2d6e2a; }
+        .code-run-btn:disabled { opacity: .45; cursor: not-allowed; }
+        .code-run-btn.running { background: #007acc; }
+        @keyframes pulse-btn { 0%,100%{opacity:1} 50%{opacity:.6} }
+        @keyframes spin-btn  { to { transform: rotate(360deg); } }
+        /* Editor textarea — VS Code editor area */
+        .code-runner-editor {
+            display: block;
+            width: 100%;
+            min-height: 72px;
+            max-height: 420px;
+            resize: vertical;
+            padding: 10px 16px 10px 48px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border: none;
+            border-bottom: 1px solid #3c3c3c;
+            border-left: 4px solid #252526;
+            outline: none;
+            font-family: 'Cascadia Code', 'Fira Code', Consolas, 'Courier New', monospace;
+            font-size: 13.5px;
+            line-height: 1.6;
+            tab-size: 4;
+            white-space: pre;
+            overflow-x: auto;
+            caret-color: #aeafad;
+            transition: border-left-color .15s;
+        }
+        .code-runner-editor:focus { border-left-color: #007acc; outline: none; }
+        .code-runner-editor::selection { background: #264f78; }
+        /* stdin row */
+        .code-runner-stdin-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 5px 10px;
+            background: #252526;
+            border-bottom: 1px solid #3c3c3c;
+        }
+        .code-runner-stdin-label {
+            font-size: 10.5px;
+            color: #858585;
+            white-space: nowrap;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+        }
+        .code-runner-stdin {
+            flex: 1;
+            padding: 3px 8px;
+            background: #3c3c3c;
+            border: 1px solid transparent;
+            border-radius: 2px;
+            color: #d4d4d4;
+            font-family: 'Cascadia Code', Consolas, monospace;
+            font-size: 12px;
+            outline: none;
+            transition: border-color .12s;
+        }
+        .code-runner-stdin:focus { border-color: #007acc; }
+        .code-runner-stdin::placeholder { color: #555; }
+        /* Output — VS Code terminal panel */
+        .code-run-output {
+            font-family: 'Cascadia Code', Consolas, 'Courier New', monospace;
+            font-size: 12.5px;
+            line-height: 1.55;
+            background: #0c0c0c;
+            border-top: 1px solid #3c3c3c;
+        }
+        .code-run-output-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 4px 12px;
+            font-size: 11px;
+            font-weight: 600;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            letter-spacing: .02em;
+            border-bottom: 1px solid #1a1a1a;
+        }
+        .code-run-output.running .code-run-output-header { color: #75beff; background: #0c2c47; }
+        .code-run-output.success .code-run-output-header { color: #89d185; background: #0d2b0f; }
+        .code-run-output.error   .code-run-output-header { color: #f14c4c; background: #290000; }
+        .code-run-output pre {
+            margin: 0;
+            padding: 10px 16px 14px;
+            background: transparent;
+            border: none;
+            white-space: pre-wrap;
+            word-break: break-word;
+            color: #cccccc;
+            font-size: 12.5px;
+        }
+        .code-run-meta {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #858585;
+            font-weight: normal;
+        }
+        .code-run-meta svg { opacity: .65; vertical-align: -2px; }
+
         /* Print */
         @media print {
             .view-header, .view-status { display: none !important; }
@@ -225,6 +453,7 @@
             Markdown Notes
         </a>
         <div class="view-actions">
+            <button class="view-btn view-btn-secondary hidden" id="rawViewBtn" onclick="openRawView()">Raw</button>
             <button class="view-btn view-btn-secondary" onclick="copyContent()">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                 Copy
@@ -254,6 +483,15 @@
     </div>
 
     <script>
+    (function applySavedTheme() {
+        try {
+            var settings = JSON.parse(localStorage.getItem('markdown_notes_settings') || '{}');
+            if (settings.theme && settings.theme !== 'dark') {
+                document.body.classList.add('theme-' + settings.theme);
+            }
+        } catch(e) {}
+    })();
+
     // ==================== Lazy Script Loader ====================
     const _loaded = {};
     function loadScript(url) {
@@ -371,6 +609,8 @@
         } catch(e) { console.error('Decompress error:', e); return null; }
     }
 
+    var currentAlias = null;
+
     function getAliasFromUrl() {
         var params = new URLSearchParams(window.location.search);
         if (params.get('alias')) return params.get('alias');
@@ -381,7 +621,7 @@
     async function loadNoteByAlias(alias) {
         try {
             var r = await fetch('/api/note/' + alias);
-            if (r.ok) { var j = await r.json(); if (j.success && j.data) { var n = decompressNoteData(j.data); if (n) { n.views = j.views; return n; } } }
+            if (r.ok) { var j = await r.json(); if (j.success && j.data) { var n = decompressNoteData(j.data); if (n) { n.views = j.views; n.likes = j.likes || 0; return n; } } }
         } catch(e) { console.log('KV API unavailable, trying fallback...'); }
         try {
             var r2 = await fetch('/shared-notes.json');
@@ -414,7 +654,8 @@
         if (note.sharedAt) metaHtml += '<span>Shared ' + new Date(note.sharedAt).toLocaleDateString() + '</span>';
         metaHtml += '<span>' + words.toLocaleString() + ' words</span>';
         metaHtml += '<span>' + Math.ceil(words / 200) + ' min read</span>';
-        if (note.views) metaHtml += '<span>' + note.views + ' views</span>';
+        if (typeof note.views === 'number') metaHtml += '<span>' + note.views + ' views</span>';
+        if (typeof note.likes === 'number') metaHtml += '<button class="view-like-btn" id="viewLikeBtn" onclick="likeCurrentNote()">Heart <span id="viewLikeCount">' + note.likes + '</span></button>';
 
         document.getElementById('main-content').innerHTML =
             '<div class="note-header">' +
@@ -445,6 +686,30 @@
         // Lazy-load diagrams and charts only if content has them
         await renderAllDiagrams();
         await renderAllCharts();
+
+        // Decorate runnable code blocks with interactive editor + run button
+        decorateRunnableBlocks(nc);
+    }
+
+    async function likeCurrentNote() {
+        if (!currentAlias) return;
+        var btn = document.getElementById('viewLikeBtn');
+        if (btn) btn.disabled = true;
+        try {
+            var r = await fetch('/api/like/' + encodeURIComponent(currentAlias), { method: 'POST' });
+            var data = await r.json();
+            if (data.success) {
+                var count = document.getElementById('viewLikeCount');
+                if (count) count.textContent = data.likes;
+            }
+        } catch(e) {
+            if (btn) btn.disabled = false;
+        }
+    }
+
+    function openRawView() {
+        if (!currentAlias) return;
+        window.open('/raw/' + encodeURIComponent(currentAlias), '_blank');
     }
 
     // ==================== Diagram Rendering (lazy) ====================
@@ -601,6 +866,194 @@
         }
     }
 
+    // ==================== Interactive Code Runner ====================
+    var RUNNABLE_LANGS = {
+        javascript: { id: 63, label: 'JavaScript' },
+        js:         { id: 63, label: 'JavaScript' },
+        python:     { id: 71, label: 'Python' },
+        py:         { id: 71, label: 'Python' },
+        java:       { id: 62, label: 'Java' },
+        c:          { id: 50, label: 'C' },
+        cpp:        { id: 54, label: 'C++' },
+        cxx:        { id: 54, label: 'C++' },
+        go:         { id: 60, label: 'Go' },
+        rust:       { id: 73, label: 'Rust' },
+        rs:         { id: 73, label: 'Rust' },
+        csharp:     { id: 51, label: 'C#' },
+        cs:         { id: 51, label: 'C#' },
+        bash:       { id: 46, label: 'Bash' },
+        sh:         { id: 46, label: 'Bash' }
+    };
+
+    function getLangKey(codeEl) {
+        var cls = Array.from(codeEl.classList).find(function(c) { return c.startsWith('language-'); });
+        if (!cls) return null;
+        return cls.replace('language-', '').toLowerCase();
+    }
+
+    function escHtml(t) {
+        var d = document.createElement('div');
+        d.textContent = t;
+        return d.innerHTML;
+    }
+
+    function decorateRunnableBlocks(container) {
+        if (!container) return;
+        container.querySelectorAll('pre code').forEach(function(codeEl) {
+            var key = getLangKey(codeEl);
+            if (!key || !RUNNABLE_LANGS[key]) return;
+            var lang = RUNNABLE_LANGS[key];
+            var pre = codeEl.closest('pre');
+            if (!pre || pre.dataset.runnerAttached) return;
+            pre.dataset.runnerAttached = '1';
+
+            var originalCode = codeEl.textContent || '';
+
+            // Build wrapper
+            var wrap = document.createElement('div');
+            wrap.className = 'code-runner-wrap';
+
+            // Header row
+            var header = document.createElement('div');
+            header.className = 'code-runner-header';
+            header.innerHTML =
+                '<span class="code-runner-lang">' + escHtml(lang.label) + '</span>' +
+                '<button class="code-run-btn" type="button" id="runbtn-' + Date.now() + '-' + Math.random().toString(36).slice(2) + '">' +
+                '<svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><polygon points="1,0 10,5 1,10"/></svg> Run</button>';
+
+            // Editable code area
+            var textarea = document.createElement('textarea');
+            textarea.className = 'code-runner-editor';
+            textarea.spellcheck = false;
+            textarea.autocomplete = 'off';
+            textarea.value = originalCode;
+            // auto-resize
+            textarea.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 400) + 'px';
+            });
+            // Tab key inserts spaces
+            textarea.addEventListener('keydown', function(e) {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    var s = this.selectionStart, en = this.selectionEnd;
+                    this.value = this.value.substring(0, s) + '    ' + this.value.substring(en);
+                    this.selectionStart = this.selectionEnd = s + 4;
+                }
+            });
+
+            // Stdin row
+            var stdinRow = document.createElement('div');
+            stdinRow.className = 'code-runner-stdin-wrap';
+            var stdinLabel = document.createElement('span');
+            stdinLabel.className = 'code-runner-stdin-label';
+            stdinLabel.textContent = 'stdin (optional):';
+            var stdinInput = document.createElement('input');
+            stdinInput.className = 'code-runner-stdin';
+            stdinInput.type = 'text';
+            stdinInput.placeholder = 'Input to pass to your program…';
+            stdinRow.appendChild(stdinLabel);
+            stdinRow.appendChild(stdinInput);
+
+            // Output panel
+            var outputPanel = document.createElement('div');
+            outputPanel.className = 'code-run-output';
+            outputPanel.style.display = 'none';
+
+            // Assemble
+            wrap.appendChild(header);
+            wrap.appendChild(textarea);
+            wrap.appendChild(stdinRow);
+            wrap.appendChild(outputPanel);
+
+            // Replace the original <pre> with our widget
+            pre.replaceWith(wrap);
+
+            // Auto-size textarea initially
+            setTimeout(function() {
+                textarea.style.height = 'auto';
+                textarea.style.height = Math.min(textarea.scrollHeight, 400) + 'px';
+            }, 0);
+
+            // Wire run button
+            var runBtn = header.querySelector('.code-run-btn');
+            runBtn.addEventListener('click', function() {
+                runCode(lang, textarea, stdinInput, outputPanel, runBtn);
+            });
+        });
+    }
+
+    async function runCode(lang, textarea, stdinInput, outputPanel, runBtn) {
+        if (runBtn.dataset.running) return;
+        runBtn.dataset.running = '1';
+        runBtn.classList.add('running');
+        runBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin-btn .7s linear infinite"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/></svg> Running…';
+        runBtn.disabled = true;
+
+        outputPanel.style.display = 'block';
+        outputPanel.className = 'code-run-output running';
+        outputPanel.innerHTML =
+            '<div class="code-run-output-header"><span>Running ' + escHtml(lang.label) + '…</span></div>' +
+            '<pre>Submitting to Judge0…</pre>';
+
+        try {
+            var payload = {
+                language: lang.label.toLowerCase().replace(/[^a-z]/g, ''),
+                languageId: lang.id,
+                sourceCode: textarea.value,
+                stdin: stdinInput.value
+            };
+
+            var resp = await fetch('/api/run-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            var data = {};
+            try { data = await resp.json(); } catch(e) {}
+
+            if (!resp.ok || !data.success) {
+                throw new Error(data.details || data.error || ('HTTP ' + resp.status));
+            }
+
+            var result = data.result || {};
+            var statusId = result.status && result.status.id != null ? Number(result.status.id) : null;
+            var statusText = (result.status && result.status.description) ? result.status.description : 'Done';
+
+            var chunks = [];
+            if (result.stdout) chunks.push(result.stdout);
+            if (result.stderr) chunks.push('[stderr]\n' + result.stderr);
+            if (result.compileOutput) chunks.push('[compile]\n' + result.compileOutput);
+            if (result.message) chunks.push('[msg]\n' + result.message);
+            var outputText = chunks.join('\n\n').trim() || '(no output)';
+
+            var meta = [];
+            if (result.time != null && result.time !== '') meta.push('<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ' + result.time + 's');
+            if (result.memory != null && result.memory !== '') meta.push('<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 6V4m4 2V4m4 2V4m4 2V4"/></svg> ' + result.memory + ' KB');
+
+            var state = statusId === 3 ? 'success' : 'error';
+            outputPanel.className = 'code-run-output ' + state;
+            outputPanel.innerHTML =
+                '<div class="code-run-output-header">' +
+                '<span>' + escHtml('Result: ' + statusText) + '</span>' +
+                (meta.length ? '<span class="code-run-meta">' + meta.join('<span style="opacity:.35"> · </span>') + '</span>' : '') +
+                '</div>' +
+                '<pre>' + escHtml(outputText) + '</pre>';
+
+        } catch (err) {
+            outputPanel.className = 'code-run-output error';
+            outputPanel.innerHTML =
+                '<div class="code-run-output-header"><span>Execution failed</span></div>' +
+                '<pre>' + escHtml(err.message || 'Unknown error') + '</pre>';
+        } finally {
+            delete runBtn.dataset.running;
+            runBtn.classList.remove('running');
+            runBtn.innerHTML = '<svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><polygon points="1,0 10,5 1,10"/></svg> Run';
+            runBtn.disabled = false;
+        }
+    }
+
     // ==================== Copy ====================
     var currentNote = null;
     function copyContent() {
@@ -624,6 +1077,9 @@
         if (!note) {
             var alias = getAliasFromUrl();
             if (alias && alias !== 'view' && alias !== 'view.html') {
+                currentAlias = alias;
+                var rawBtn = document.getElementById('rawViewBtn');
+                if (rawBtn) rawBtn.classList.remove('hidden');
                 note = await loadNoteByAlias(alias);
             }
         }

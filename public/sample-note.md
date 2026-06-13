@@ -1,11 +1,11 @@
-# Welcome to Markdown Notes! 📝
+# Welcome to Markdown Notes! 
 
 This is a sample note demonstrating the features of your Markdown Notes app.
 
-## ✨ Features
+## Features
 
 ### Text Formatting
-- **Bold text** using `**text**`
+- **Bold text**using `**text**`
 - *Italic text* using `*text*`
 - ~~Strikethrough~~ using `~~text~~`
 - `inline code` using backticks
@@ -59,11 +59,11 @@ $$
 
 | Feature | Status |
 |---------|--------|
-| Markdown | ✅ |
-| Math (LaTeX) | ✅ |
-| Code Highlighting | ✅ |
-| Auto-save | ✅ |
-| Custom Aliases | ✅ |
+| Markdown |  |
+| Math (LaTeX) |  |
+| Code Highlighting |  |
+| Auto-save |  |
+| Custom Aliases |  |
 
 ### Blockquotes
 
@@ -76,15 +76,15 @@ $$
 
 ---
 
-## 🔑 Master Key
+## Master Key
 
-Enter `ToonTamilIndia` in the Master Key dialog to unlock full editing access.
+Configure `MASTER_KEY` as a Cloudflare secret, then enter that value in the Master Key dialog to manage server-side shared notes.
 
-## 🏷️ Custom Aliases
+## Custom Aliases
 
 Set a custom alias (like `welcome`) to share notes via:
 `markdown.toontamilindia.in/#welcome`
 
 ---
 
-*Happy note-taking!* 🎉
+*Happy note-taking!* 

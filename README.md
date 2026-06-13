@@ -1,7 +1,7 @@
 
 ---
 
-### ⚠️ **Disclaimer**
+### **Disclaimer**
 
 *This repository contains vibe-coded scripts intended for personal use. 
 Contributions are welcome, but breakages are expected 
@@ -9,24 +9,38 @@ and if something breaks, it’s a feature, not a bug.*
 
 ---
 
-# 📝 Markdown Notes - ToonTamilIndia
+<div align="center">
 
-A beautiful, feature-rich Markdown notes application with comprehensive diagram support, math rendering, charts, and advanced visualization capabilities.
+# Markdown Notes
 
-## 🌐 Live Site
+[![Typing SVG](https://readme-typing-svg.demolab.com?font=Inter&weight=600&size=24&pause=1000&color=0078D4&center=true&vCenter=true&width=720&lines=Markdown+notes+with+live+preview;Cloudflare+KV+sharing+and+raw+links;KaTeX%2C+Mermaid%2C+charts%2C+and+AI+editing)](https://git.io/typing-svg)
+
+![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)
+![Markdown](https://img.shields.io/badge/Markdown-Editor-000000?logo=markdown&logoColor=white)
+![KaTeX](https://img.shields.io/badge/Math-KaTeX-0078D4)
+![Mermaid](https://img.shields.io/badge/Diagrams-Mermaid-ff3670)
+![License](https://img.shields.io/badge/status-active-3fb950)
+
+Modern browser-first Markdown workspace with local notes, shareable KV-backed aliases, raw pastebin-style output, diagrams, charts, and AI-assisted editing.
+
+</div>
+
+A feature-rich Markdown notes application with comprehensive diagram support, math rendering, charts, and advanced visualization capabilities.
+
+## Live Site
 
 **URL:** [markdown.toontamilindia.in](https://markdown.toontamilindia.in)
 
-## ✨ Features
+## Features
 
 ### Core Features
-- **📝 Markdown Editor** - Full Markdown support with live preview
-- **🔢 Math Equations** - LaTeX math rendering via KaTeX (ChatGPT compatible)
-- **💾 Auto-Save** - Notes are automatically saved to local storage
-- **🔍 Search** - Quick search across all notes
-- **📱 Responsive** - Mobile-friendly with improved sidebar menu
+- **Markdown Editor** - Full Markdown support with live preview
+- **Math Equations** - LaTeX math rendering via KaTeX (ChatGPT compatible)
+- **Auto-Save** - Notes are automatically saved to local storage
+- **Search** - Quick search across all notes
+- **Responsive** - Mobile-friendly with improved sidebar menu
 
-### 📊 Diagrams & Visualizations
+### Diagrams & Visualizations
 
 #### Diagram Support
 - **Mermaid** - Flowcharts, sequence diagrams, Gantt charts, state diagrams, etc.
@@ -40,62 +54,62 @@ A beautiful, feature-rich Markdown notes application with comprehensive diagram 
 - **Vega-Lite** - Grammar of graphics for data visualization
 - **Vega** - Full declarative visualization grammar
 
-### 🎨 Syntax Highlighting
+### Syntax Highlighting
 - **Highlight.js** - 190+ languages (default)
 - **Prism** - Lightweight alternative with line highlighting
 - **Shiki** - VSCode-quality static highlighting
 
 ### Advanced Features
-- **🔑 Master Key** - Secure master key for managing all notes
-- **🏷️ Custom Aliases** - Create custom URL aliases for easy sharing
-- **📋 Quick Paste** - Paste ChatGPT conversations directly
-- **📤 Export** - Export notes as Markdown, HTML, PDF, JSON
-- **🔗 Share** - Generate compressed shareable links with QR codes
-- **📱 Mobile Optimized** - Touch-friendly interface with auto-closing sidebar
-- **⌨️ Keyboard Shortcuts** - Efficient editing with shortcuts
-- **💡 Callouts** - Info, warning, success, and danger callouts
-- **✅ Task Lists** - Interactive checkboxes
-- **📁 Collapsible Sections** - Hide/show content sections
-- **🤖 AI Assistant** - AI-powered content creation and editing (Desktop only)
-- **▶️ Code Runner** - Run supported code blocks (Piston default, Judge0 self-host optional)
+- **Master Key** - Secure master key for managing all notes
+- **Custom Aliases** - Create custom URL aliases for easy sharing
+- **Quick Paste** - Paste ChatGPT conversations directly
+- **Export** - Export notes as Markdown, HTML, PDF, JSON
+- **Share** - Generate compressed shareable links with QR codes
+- **Mobile Optimized** - Touch-friendly interface with auto-closing sidebar
+- **⌨ Keyboard Shortcuts** - Efficient editing with shortcuts
+- **Callouts** - Info, warning, success, and danger callouts
+- **Task Lists** - Interactive checkboxes
+- **Collapsible Sections** - Hide/show content sections
+- **AI Assistant** - AI-powered content creation and editing (Desktop only)
+- **▶ Code Runner** - Run supported code blocks (Piston default, Judge0 self-host optional)
 
-## 🚀 New in This Update
+## New in This Update
 
 ### Diagram Rendering
-- ✅ **Mermaid diagrams now render in both editor preview AND shared links**
-- ✅ WASM-based Graphviz rendering (client-side, no server needed)
-- ✅ PlantUML integration with server-side rendering
-- ✅ D2 diagram support with playground integration
+- **Mermaid diagrams now render in both editor preview AND shared links**
+- WASM-based Graphviz rendering (client-side, no server needed)
+- PlantUML integration with server-side rendering
+- D2 diagram support with playground integration
 
 ### Chart Support
-- ✅ Chart.js for common chart types
-- ✅ Plotly for scientific visualizations
-- ✅ Vega and Vega-Lite for advanced data visualization
+- Chart.js for common chart types
+- Plotly for scientific visualizations
+- Vega and Vega-Lite for advanced data visualization
 
 ### Mobile Improvements
-- ✅ Fixed sidebar toggle on mobile devices
-- ✅ Auto-close sidebar when clicking outside
-- ✅ Better touch targets and responsive design
-- ✅ Improved toolbar layout for small screens
+- Fixed sidebar toggle on mobile devices
+- Auto-close sidebar when clicking outside
+- Better touch targets and responsive design
+- Improved toolbar layout for small screens
 
 ### Framework Support
-- ✅ Unified/Remark/Rehype compatible (via Marked.js)
-- ✅ Markdown-it ready
-- ✅ MDX support (can be integrated)
-- ✅ Excalidraw integration available
+- Unified/Remark/Rehype compatible (via Marked.js)
+- Markdown-it ready
+- MDX support (can be integrated)
+- Excalidraw integration available
 
 ### AI Assistant (NEW!)
-- ✅ **Multi-provider support** - OpenAI, Google Gemini, OpenRouter
-- ✅ **Content generation** - Create notes from descriptions
-- ✅ **Text improvement** - Enhance, fix grammar, expand, summarize
-- ✅ **Diagram generation** - Create Mermaid, PlantUML, Graphviz diagrams
-- ✅ **Q&A mode** - Ask questions about your notes
-- ✅ **Inline editing** - Ctrl+I for quick AI access (like VS Code)
-- ✅ **Desktop only** - Optimized UX for desktop users
-- ✅ **Secure** - API keys stored locally in browser
-- ✅ **Hosted code execution** - Piston by default, auto-switch to Judge0 self-host when configured
+- **Multi-provider support** - OpenAI, Google Gemini, OpenRouter
+- **Content generation** - Create notes from descriptions
+- **Text improvement** - Enhance, fix grammar, expand, summarize
+- **Diagram generation** - Create Mermaid, PlantUML, Graphviz diagrams
+- **Q&A mode** - Ask questions about your notes
+- **Inline editing** - Ctrl+I for quick AI access (like VS Code)
+- **Desktop only** - Optimized UX for desktop users
+- **Secure** - API keys stored locally in browser
+- **Hosted code execution** - Piston by default, auto-switch to Judge0 self-host when configured
 
-## 🔧 Usage
+## Usage
 
 ### Creating Notes
 1. Click **"+ New Note"** in the sidebar
@@ -213,11 +227,11 @@ The AI assistant helps you create, edit, and enhance content using multiple AI p
 5. Select your preferred model
 
 #### Quick Actions
-- **✨ Improve** - Enhance selected text
-- **✓ Fix Grammar** - Correct grammar and spelling
-- **📝 Expand** - Add more details
-- **📄 Summarize** - Make content concise
-- **💡 Explain** - Get simple explanations
+- **Improve** - Enhance selected text
+- **Fix Grammar** - Correct grammar and spelling
+- **Expand** - Add more details
+- **Summarize** - Make content concise
+- **Explain** - Get simple explanations
 
 #### Custom Prompts
 ```
@@ -238,7 +252,7 @@ See [AI_GUIDE.md](./AI_GUIDE.md) for comprehensive documentation.
 5. Add fenced code blocks (for example `python` or `javascript`) and click **Run** in preview
 
 ### Master Key Access
-- Click **"🔑 Master Key"** in the sidebar
+- Click **" Master Key"** in the sidebar
 - Enter your configured master key
 - This grants full editing access to all notes
 
@@ -252,7 +266,7 @@ See [AI_GUIDE.md](./AI_GUIDE.md) for comprehensive documentation.
 | `Ctrl/Cmd + K` | Insert link |
 | `Escape` | Close modals |
 
-## 🚀 Deployment
+## Deployment
 
 ### Option 1: Static Hosting (Recommended)
 
@@ -287,7 +301,7 @@ Name: markdown
 Value: your-deployment-url
 ```
 
-## 📁 File Structure
+## File Structure
 
 ```
 Markdown/
@@ -299,14 +313,14 @@ Markdown/
 └── README.md       # This file
 ```
 
-## 🔒 Security Note
+## Security Note
 
 The master key provides access to manage all notes stored in the KV storage. For Cloudflare Workers/Pages deployments, configure the `MASTER_KEY` environment variable securely in your Cloudflare dashboard. This is a client-side application - all personal notes are stored locally in the user's browser.
 
-## 📄 License
+## License
 
 Created for ToonTamilIndia. Free to use and modify.
 
 ---
 
-Made with ❤️ for easy note-taking
+Made with  for easy note-taking

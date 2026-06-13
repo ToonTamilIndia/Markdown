@@ -49,7 +49,7 @@ function updateSelectionBadge() {
         const preview = _savedSelection.text.length > 60
             ? _savedSelection.text.substring(0, 57) + '...'
             : _savedSelection.text;
-        badge.innerHTML = `<span class="ai-sel-icon">✂️</span>
+        badge.innerHTML = `<span class="ai-sel-icon"></span>
             <span class="ai-sel-text" title="${escapeHtml(_savedSelection.text)}">${escapeHtml(preview)}</span>
             <button onclick="clearSavedSelection()" class="ai-sel-clear" title="Clear selection">×</button>`;
         badge.classList.add('visible');
@@ -76,6 +76,7 @@ function getSelectedText() {
 
 class AIAssistant {
     constructor() {
+        migrateAIKeyStorage(isSecureAIKeyStorageEnabled());
         this.apiKeys = this.loadAPIKeys();
         this.currentProvider = localStorage.getItem('ai_provider') || 'openai';
         this.currentModel = localStorage.getItem('ai_model') || 'gpt-3.5-turbo';
@@ -83,18 +84,20 @@ class AIAssistant {
         this.conversationHistory = [];
     }
 
-    // Load API keys from localStorage
+    // Load API keys from the configured browser storage.
     loadAPIKeys() {
+        const storage = getAIKeyStorage();
         return {
-            openai: localStorage.getItem('ai_key_openai') || '',
-            gemini: localStorage.getItem('ai_key_gemini') || '',
-            openrouter: localStorage.getItem('ai_key_openrouter') || ''
+            openai: storage.getItem('ai_key_openai') || '',
+            gemini: storage.getItem('ai_key_gemini') || '',
+            openrouter: storage.getItem('ai_key_openrouter') || ''
         };
     }
 
     // Save API key
     saveAPIKey(provider, key) {
-        localStorage.setItem(`ai_key_${provider}`, key);
+        const storage = getAIKeyStorage();
+        storage.setItem(`ai_key_${provider}`, key);
         this.apiKeys[provider] = key;
     }
 
@@ -357,6 +360,28 @@ class AIAssistant {
     }
 }
 
+function isSecureAIKeyStorageEnabled() {
+    return localStorage.getItem('ai_secure_keys') !== 'false';
+}
+
+function getAIKeyStorage() {
+    return isSecureAIKeyStorageEnabled() ? sessionStorage : localStorage;
+}
+
+function migrateAIKeyStorage(secureEnabled) {
+    const from = secureEnabled ? localStorage : sessionStorage;
+    const to = secureEnabled ? sessionStorage : localStorage;
+    ['openai', 'gemini', 'openrouter'].forEach(provider => {
+        const key = from.getItem(`ai_key_${provider}`);
+        if (key && !to.getItem(`ai_key_${provider}`)) {
+            to.setItem(`ai_key_${provider}`, key);
+        }
+        if (secureEnabled) {
+            localStorage.removeItem(`ai_key_${provider}`);
+        }
+    });
+}
+
 // Global AI assistant instance
 let aiAssistant = null;
 
@@ -488,7 +513,7 @@ function addUserMessage(text) {
     const msg = document.createElement('div');
     msg.className = 'ai-msg user';
     msg.innerHTML = `
-        <div class="ai-msg-avatar">👤</div>
+        <div class="ai-msg-avatar"></div>
         <div class="ai-msg-body">
             <div class="ai-msg-content">${escapeHtml(text)}</div>
         </div>
@@ -502,13 +527,13 @@ function addAssistantMessage(html, rawText) {
     const msg = document.createElement('div');
     msg.className = 'ai-msg assistant';
     msg.innerHTML = `
-        <div class="ai-msg-avatar">🤖</div>
+        <div class="ai-msg-avatar">AI</div>
         <div class="ai-msg-body">
             <div class="ai-msg-content">${html}</div>
             <div class="ai-msg-actions">
-                <button onclick="insertAIResult()" class="ai-msg-action primary">✓ Insert</button>
+                <button onclick="insertAIResult()" class="ai-msg-action primary"> Insert</button>
                 <button onclick="replaceWithAIResult()" class="ai-msg-action">⟳ Replace</button>
-                <button onclick="copyAIResult()" class="ai-msg-action">📋 Copy</button>
+                <button onclick="copyAIResult()" class="ai-msg-action">Copy</button>
             </div>
         </div>
     `;
@@ -522,18 +547,18 @@ function addErrorMessage(errorText) {
     const msg = document.createElement('div');
     msg.className = 'ai-msg assistant';
     msg.innerHTML = `
-        <div class="ai-msg-avatar">⚠️</div>
+        <div class="ai-msg-avatar"></div>
         <div class="ai-msg-body">
             <div class="ai-error">
                 <div style="display:flex;align-items:flex-start;gap:8px">
-                    <span style="font-size:1.1rem">❌</span>
+                    <span style="font-size:1.1rem">Error</span>
                     <div style="flex:1;min-width:0">
                         <div style="font-weight:500;margin-bottom:2px">Something went wrong</div>
                         <div style="opacity:.85;font-size:.82rem">${escapeHtml(errorText)}</div>
                     </div>
                 </div>
                 <div style="display:flex;gap:6px;margin-top:8px">
-                    <button onclick="showAISettings()" class="ai-msg-action" style="font-size:.75rem">⚙️ Settings</button>
+                    <button onclick="showAISettings()" class="ai-msg-action" style="font-size:.75rem"> Settings</button>
                 </div>
             </div>
         </div>
@@ -549,7 +574,7 @@ function showThinking() {
     el.id = 'aiThinking';
     el.className = 'ai-msg assistant';
     el.innerHTML = `
-        <div class="ai-msg-avatar">🤖</div>
+        <div class="ai-msg-avatar">AI</div>
         <div class="ai-msg-body">
             <div class="ai-thinking">
                 <div class="ai-thinking-dots"><span></span><span></span><span></span></div>
@@ -599,6 +624,8 @@ function showAISettings() {
         document.getElementById('aiOpenAIKey').value = aiAssistant.apiKeys.openai || '';
         document.getElementById('aiGeminiKey').value = aiAssistant.apiKeys.gemini || '';
         document.getElementById('aiOpenRouterKey').value = aiAssistant.apiKeys.openrouter || '';
+        const secureKeys = document.getElementById('aiSecureKeys');
+        if (secureKeys) secureKeys.checked = isSecureAIKeyStorageEnabled();
         
         // Load agent mode settings
         const agentMode = localStorage.getItem('ai_agent_mode') === 'true';
@@ -645,6 +672,7 @@ function saveAISettings() {
     const openaiKey = document.getElementById('aiOpenAIKey').value.trim();
     const geminiKey = document.getElementById('aiGeminiKey').value.trim();
     const openrouterKey = document.getElementById('aiOpenRouterKey').value.trim();
+    const secureKeys = document.getElementById('aiSecureKeys')?.checked !== false;
     
     // Agent mode settings
     const agentMode = document.getElementById('aiAgentMode')?.checked || false;
@@ -654,6 +682,9 @@ function saveAISettings() {
     if (!aiAssistant) {
         initializeAI();
     }
+
+    localStorage.setItem('ai_secure_keys', secureKeys ? 'true' : 'false');
+    migrateAIKeyStorage(secureKeys);
     
     // Save API keys (only if not empty)
     if (openaiKey) aiAssistant.saveAPIKey('openai', openaiKey);
@@ -682,9 +713,9 @@ function saveAISettings() {
     closeAISettings();
     
     if (typeof showToast === 'function') {
-        showToast('✓ AI settings saved successfully', 'success');
+        showToast(' AI settings saved successfully', 'success');
     } else {
-        alert('✓ AI settings saved successfully');
+        alert(' AI settings saved successfully');
     }
 }
 
@@ -702,7 +733,7 @@ async function processAICommand() {
     // Add user message to chat (include selection context if any)
     let displayMsg = input;
     if (selectedText && input.toLowerCase() !== selectedText.toLowerCase()) {
-        displayMsg = input + '\n\n📎 Using selected text (' + selectedText.length + ' chars)';
+        displayMsg = input + '\n\n Using selected text (' + selectedText.length + ' chars)';
     }
     addUserMessage(displayMsg);
     inputEl.value = '';
@@ -826,11 +857,11 @@ async function quickAIAction(action) {
     if (!panel.classList.contains('active')) showAIPanel();
 
     const actionLabels = {
-        improve: '✨ Improve text',
-        fix: '✓ Fix grammar',
-        expand: '📝 Expand text',
-        summarize: '📄 Summarize',
-        explain: '💡 Explain'
+        improve: 'Improve text',
+        fix: ' Fix grammar',
+        expand: ' Expand text',
+        summarize: ' Summarize',
+        explain: ' Explain'
     };
     
     addUserMessage(actionLabels[action] || action);
@@ -1002,14 +1033,14 @@ function useTemplate(templateType) {
 function showAIHelp() {
     hideWelcome();
     const helpHtml = `
-        <h3>🤖 AI Assistant Help</h3>
+        <h3>AI Assistant Help</h3>
         <h4>Quick Actions</h4>
         <ul>
-            <li><strong>✨ Improve:</strong> Enhance selected text quality</li>
-            <li><strong>✓ Fix Grammar:</strong> Correct spelling and grammar</li>
-            <li><strong>📝 Expand:</strong> Add more details and context</li>
-            <li><strong>📄 Summarize:</strong> Make text shorter and concise</li>
-            <li><strong>💡 Explain:</strong> Simplify complex concepts</li>
+            <li><strong>Improve:</strong> Enhance selected text quality</li>
+            <li><strong> Fix Grammar:</strong> Correct spelling and grammar</li>
+            <li><strong> Expand:</strong> Add more details and context</li>
+            <li><strong> Summarize:</strong> Make text shorter and concise</li>
+            <li><strong> Explain:</strong> Simplify complex concepts</li>
         </ul>
         <h4>Custom Prompts</h4>
         <p>Type any request like:</p>
@@ -1031,7 +1062,7 @@ function showAIHelp() {
     const msg = document.createElement('div');
     msg.className = 'ai-msg assistant';
     msg.innerHTML = `
-        <div class="ai-msg-avatar">ℹ️</div>
+        <div class="ai-msg-avatar">ℹ</div>
         <div class="ai-msg-body">
             <div class="ai-msg-content">${helpHtml}</div>
         </div>
@@ -1190,7 +1221,7 @@ function updateAPIKeyStatuses() {
         const statusEl = document.getElementById(`${provider}Status`);
         if (statusEl) {
             const hasKey = aiAssistant.apiKeys[provider];
-            statusEl.textContent = hasKey ? '✓ Configured' : 'Not configured';
+            statusEl.textContent = hasKey ? ' Configured' : 'Not configured';
             statusEl.classList.toggle('configured', hasKey);
         }
     });
@@ -1213,10 +1244,10 @@ async function testAIConnection() {
         const result = await aiAssistant.chat(testMessage);
         
         updateAIStatus('Ready');
-        alert(`✓ Connection successful!\n\nProvider: ${provider}\nModel: ${aiAssistant.currentModel}\n\nResponse: ${result}`);
+        alert(` Connection successful!\n\nProvider: ${provider}\nModel: ${aiAssistant.currentModel}\n\nResponse: ${result}`);
     } catch (error) {
         updateAIStatus('Connection failed');
-        alert(`❌ Connection failed:\n\n${error.message}\n\nPlease check your API key and try again.`);
+        alert(`Connection failed:\n\n${error.message}\n\nPlease check your API key and try again.`);
     }
 }
 
@@ -1255,14 +1286,14 @@ Do not include explanations about what you're doing - just provide the content.`
             const msg = document.createElement('div');
             msg.className = 'ai-msg assistant';
             msg.innerHTML = `
-                <div class="ai-msg-avatar">🤖</div>
+                <div class="ai-msg-avatar">AI</div>
                 <div class="ai-msg-body">
                     <div class="ai-msg-content">${parseMarkdown(result)}</div>
                     <div class="ai-msg-actions">
-                        <button onclick="applyAgentResult(this)" class="ai-msg-action primary">✓ Accept &amp; Apply</button>
+                        <button onclick="applyAgentResult(this)" class="ai-msg-action primary"> Accept &amp; Apply</button>
                         <button onclick="insertAIResult()" class="ai-msg-action">↓ Insert</button>
-                        <button onclick="copyAIResult()" class="ai-msg-action">📋 Copy</button>
-                        <button onclick="this.closest('.ai-msg-actions').innerHTML='<span style=color:var(--text-secondary)>Discarded</span>'" class="ai-msg-action">✕ Discard</button>
+                        <button onclick="copyAIResult()" class="ai-msg-action">Copy</button>
+                        <button onclick="this.closest('.ai-msg-actions').innerHTML='<span style=color:var(--text-secondary)>Discarded</span>'" class="ai-msg-action"> Discard</button>
                     </div>
                 </div>
             `;
@@ -1275,9 +1306,9 @@ Do not include explanations about what you're doing - just provide the content.`
             if (editor) {
                 editor.value = result;
                 if (typeof updatePreview === 'function') updatePreview();
-                if (autoSave && typeof saveCurrentNote === 'function') saveCurrentNote();
+                if (autoSave && typeof saveNote === 'function') saveNote();
             }
-            addAssistantMessage('<p>✅ Content generated and applied to editor!</p>' + (autoSave ? '<p><small>Changes saved automatically.</small></p>' : ''), result);
+            addAssistantMessage('<p>Content generated and applied to editor.</p>' + (autoSave ? '<p><small>Changes saved automatically.</small></p>' : ''), result);
         }
         
         updateAIStatus('Ready');
@@ -1286,6 +1317,61 @@ Do not include explanations about what you're doing - just provide the content.`
     } catch (error) {
         hideThinking();
         addErrorMessage('Agent mode error: ' + error.message);
+        updateAIStatus('Error');
+        setAIStatusDot('error');
+    }
+}
+
+async function editModeExecute(prompt) {
+    const editor = document.getElementById('markdownEditor');
+    if (!editor) return;
+
+    const selectedText = getSelectedText();
+    const source = selectedText || editor.value;
+    const autoSave = localStorage.getItem('ai_auto_save') === 'true';
+    const confirmChanges = localStorage.getItem('ai_confirm_changes') !== 'false';
+
+    addUserMessage(prompt + (selectedText ? '\n\nUsing selected text.' : '\n\nUsing the full note.'));
+    showThinking();
+    updateAIStatus('Editing...');
+    setAIStatusDot('busy');
+
+    try {
+        const systemPrompt = `You are an editor inside a Markdown note app.
+Apply the user's requested edit to the provided Markdown.
+Return only the revised Markdown. Do not explain the changes.`;
+        const result = await aiAssistant.chat(`Edit request: ${prompt}\n\nMarkdown:\n${source}`, systemPrompt);
+        hideThinking();
+        window.currentAIResult = result;
+
+        if (confirmChanges) {
+            const container = document.getElementById('aiMessages');
+            const msg = document.createElement('div');
+            msg.className = 'ai-msg assistant';
+            msg.innerHTML = `
+                <div class="ai-msg-avatar">AI</div>
+                <div class="ai-msg-body">
+                    <div class="ai-msg-content">${parseMarkdown(result)}</div>
+                    <div class="ai-msg-actions">
+                        <button onclick="replaceWithAIResult()" class="ai-msg-action primary">Accept edit</button>
+                        <button onclick="insertAIResult()" class="ai-msg-action">Insert</button>
+                        <button onclick="copyAIResult()" class="ai-msg-action">Copy</button>
+                        <button onclick="this.closest('.ai-msg-actions').innerHTML='<span style=color:var(--text-secondary)>Discarded</span>'" class="ai-msg-action">Discard</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(msg);
+            scrollChatToBottom();
+        } else {
+            replaceWithAIResult();
+            if (autoSave && typeof saveNote === 'function') saveNote();
+        }
+
+        updateAIStatus('Ready');
+        setAIStatusDot('ready');
+    } catch (error) {
+        hideThinking();
+        addErrorMessage('Edit mode error: ' + error.message);
         updateAIStatus('Error');
         setAIStatusDot('error');
     }
@@ -1300,11 +1386,11 @@ function applyAgentResult(btn) {
         if (typeof updatePreview === 'function') updatePreview();
         
         const autoSave = localStorage.getItem('ai_auto_save') === 'true';
-        if (autoSave && typeof saveCurrentNote === 'function') saveCurrentNote();
+        if (autoSave && typeof saveNote === 'function') saveNote();
         
         // Update button to show applied
         const actions = btn.closest('.ai-msg-actions');
-        if (actions) actions.innerHTML = '<span style="color: var(--accent-success)">✅ Applied to editor</span>';
+        if (actions) actions.innerHTML = '<span style="color: var(--accent-success)">Applied to editor</span>';
         
         showToast('Content applied to editor', 'success');
     }
@@ -1327,9 +1413,8 @@ async function handleAICommand() {
         await agentModeExecute(prompt);
         input.value = '';
     } else if (currentMode === 'edit') {
-        // Edit mode: try to apply directly
-        localStorage.setItem('ai_agent_mode', 'true');
-        await agentModeExecute(prompt);
+        localStorage.setItem('ai_agent_mode', 'false');
+        await editModeExecute(prompt);
         input.value = '';
     } else {
         // Ask mode: normal processing

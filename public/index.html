@@ -125,9 +125,9 @@
                         <span class="fmt-sep"></span>
                         <button onclick="insertFormat('- ', '')" title="List">—</button>
                         <button onclick="insertFormat('1. ', '')" title="Numbered List">1.</button>
-                        <button onclick="insertFormat('- [ ] ', '')" title="Task">☐</button>
+                        <button onclick="insertFormat('- [ ] ', '')" title="Task">[ ]</button>
                         <span class="fmt-sep"></span>
-                        <button onclick="insertFormat('[', '](url)')" title="Link">⛓</button>
+                        <button onclick="insertFormat('[', '](url)')" title="Link">Link</button>
                         <button onclick="insertFormat('![alt](', ')')" title="Image">⊞</button>
                         <button onclick="insertFormat('> ', '')" title="Quote">"</button>
                         <button onclick="insertFormat('$', '$')" title="Math">∑</button>
@@ -169,7 +169,7 @@ Paste your notes directly here!"></textarea>
             <!-- Status Bar -->
             <div class="status-bar">
                 <div class="status-left">
-                    <span class="status-item" id="statusSync">✓ Saved</span>
+                    <span class="status-item" id="statusSync">Saved</span>
                 </div>
                 <div class="status-center">
                     <span class="status-item" id="statusInfo">
@@ -225,7 +225,7 @@ Paste your notes directly here!"></textarea>
                     <h4>How can I help?</h4>
                     <p>Ask questions, generate content, or let me edit your notes.</p>
                     <div class="ai-chips">
-                        <button onclick="quickAIAction('improve')" class="ai-chip">✨ Improve</button>
+                        <button onclick="quickAIAction('improve')" class="ai-chip">Improve</button>
                         <button onclick="quickAIAction('fix')" class="ai-chip">Fix Grammar</button>
                         <button onclick="quickAIAction('expand')" class="ai-chip">Expand</button>
                         <button onclick="quickAIAction('summarize')" class="ai-chip">Summarize</button>
@@ -237,7 +237,7 @@ Paste your notes directly here!"></textarea>
                 <div id="aiTemplates" class="ai-templates hidden">
                     <div class="ai-templates-header">
                         <span>Quick Templates</span>
-                        <button onclick="hideAITemplates()" class="ai-ctrl-btn">✕</button>
+                        <button onclick="hideAITemplates()" class="ai-ctrl-btn">x</button>
                     </div>
                     <div class="ai-template-list">
                         <button onclick="useTemplate('create-tutorial')" class="ai-template-item">Create a tutorial about...</button>
@@ -286,7 +286,7 @@ Paste your notes directly here!"></textarea>
         <div class="modal-content">
             <div class="modal-header"><h2>Master Key Access</h2><button class="modal-close" onclick="closeMasterKeyModal()">×</button></div>
             <div class="modal-body">
-                <p>Enter the master key to unlock editing for all notes:</p>
+                <p>Enter the server admin key to manage Cloudflare KV notes:</p>
                 <input type="password" id="masterKeyInput" placeholder="Enter master key...">
                 <div class="modal-actions">
                     <button class="btn-primary" onclick="verifyMasterKey()">Unlock</button>
@@ -306,6 +306,7 @@ Paste your notes directly here!"></textarea>
                     <button class="share-tab active" onclick="switchImportTab('paste')">Paste</button>
                     <button class="share-tab" onclick="switchImportTab('file')">File</button>
                     <button class="share-tab" onclick="switchImportTab('url')">URL</button>
+                    <button class="share-tab" onclick="switchImportTab('kv')">KV Alias</button>
                     <button class="share-tab" onclick="switchImportTab('json')">JSON Backup</button>
                 </div>
                 <div class="import-content" id="importPasteContent">
@@ -326,6 +327,13 @@ Paste your notes directly here!"></textarea>
                     <p>Import from URL (raw markdown):</p>
                     <input type="text" id="importUrl" placeholder="https://raw.githubusercontent.com/..." class="import-url-input">
                     <div class="modal-actions"><button class="btn-primary" onclick="importFromUrl()">Import</button><button class="btn-secondary" onclick="closeImportModal()">Cancel</button></div>
+                </div>
+                <div class="import-content hidden" id="importKvContent">
+                    <p>Restore a Cloudflare KV note by alias. Paste the recovery key if you want to update that alias from this browser.</p>
+                    <input type="text" id="restoreKvAlias" placeholder="alias" class="import-url-input" spellcheck="false">
+                    <input type="password" id="restoreKvKey" placeholder="Alias recovery key" class="import-url-input" spellcheck="false">
+                    <div class="modal-actions"><button class="btn-primary" onclick="restoreKvAlias()">Restore</button><button class="btn-secondary" onclick="closeImportModal()">Cancel</button></div>
+                    <p class="import-warning">Without the recovery key, the note can still be imported but you cannot update the existing alias.</p>
                 </div>
                 <div class="import-content hidden" id="importJsonContent">
                     <p>Restore from JSON backup:</p>
@@ -362,17 +370,21 @@ Paste your notes directly here!"></textarea>
                         <input type="text" id="shareUrl" readonly>
                         <button onclick="copyShareLink()" class="btn-copy">Copy</button>
                     </div>
+                    <div class="share-url-box hidden" id="rawShareUrlBox">
+                        <input type="text" id="rawShareUrl" readonly>
+                        <button onclick="copyRawShareLink()" class="btn-copy">Copy Raw</button>
+                    </div>
                     <div class="share-options">
                         <label class="checkbox-label"><input type="checkbox" id="shareReadOnly" checked> Read-only</label>
-                        <label class="checkbox-label"><input type="checkbox" id="shareWithMath" checked> Math rendering</label>
                     </div>
                     <div class="share-social">
                         <div class="social-buttons">
-                            <button onclick="shareToTwitter()" class="social-btn twitter">𝕏</button>
-                            <button onclick="shareToLinkedIn()" class="social-btn linkedin">in</button>
-                            <button onclick="shareToWhatsApp()" class="social-btn whatsapp">WA</button>
-                            <button onclick="shareToTelegram()" class="social-btn telegram">TG</button>
-                            <button onclick="shareByEmail()" class="social-btn email">✉</button>
+                            <button onclick="shareToTwitter()" class="social-btn twitter" title="Share on X"><img alt="" src="https://cdn.simpleicons.org/x/000000">X</button>
+                            <button onclick="shareToLinkedIn()" class="social-btn linkedin" title="Share on LinkedIn"><img alt="" src="https://cdn.simpleicons.org/linkedin/0A66C2">LinkedIn</button>
+                            <button onclick="shareToWhatsApp()" class="social-btn whatsapp" title="Share on WhatsApp"><img alt="" src="https://cdn.simpleicons.org/whatsapp/25D366">WhatsApp</button>
+                            <button onclick="shareToInstagram()" class="social-btn instagram" title="Copy link for Instagram"><img alt="" src="https://cdn.simpleicons.org/instagram/E4405F">Instagram</button>
+                            <button onclick="shareToTelegram()" class="social-btn telegram" title="Share on Telegram"><img alt="" src="https://cdn.simpleicons.org/telegram/26A5E4">Telegram</button>
+                            <button onclick="shareByEmail()" class="social-btn email" title="Share by email"><img alt="" src="https://cdn.simpleicons.org/maildotru/005FF9">Email</button>
                         </div>
                     </div>
                 </div>
@@ -480,7 +492,8 @@ Paste your notes directly here!"></textarea>
                 </div>
                 <div class="ai-settings-section">
                     <h3>API Keys</h3>
-                    <p class="help-text">Keys stored in browser only — never sent to our servers.</p>
+                    <p class="help-text">Keys stay in this browser and are used directly with the selected provider.</p>
+                    <label class="checkbox-label"><input type="checkbox" id="aiSecureKeys" checked> Secure API keys in this browser</label>
                     <div class="api-key-group">
                         <div class="api-key-header"><label>OpenAI</label><span class="api-key-status" id="openaiStatus">—</span></div>
                         <input type="password" id="aiOpenAIKey" placeholder="sk-...">

@@ -40,25 +40,25 @@
     </style>
 </head>
 <body>
-    <h1>🧪 Markdown Notes - Feature Test Page</h1>
+    <h1> Markdown Notes - Feature Test Page</h1>
     <p>This page tests all the new features added to the Markdown Notes application.</p>
 
     <div class="test-section">
-        <h2>📚 Libraries Loaded</h2>
+        <h2> Libraries Loaded</h2>
         <ul id="library-status">
             <li>Loading...</li>
         </ul>
     </div>
 
     <div class="test-section">
-        <h2>🔧 Functionality Tests</h2>
+        <h2> Functionality Tests</h2>
         <ul id="function-tests">
             <li>Running tests...</li>
         </ul>
     </div>
 
     <div class="test-section">
-        <h2>📊 Sample Renderings</h2>
+        <h2> Sample Renderings</h2>
         <div id="samples"></div>
     </div>
 
@@ -105,7 +105,7 @@
             libraryStatus.innerHTML = libraries.map(lib => {
                 const loaded = lib.check();
                 const statusClass = loaded ? 'success' : 'error';
-                const statusText = loaded ? '✅ Loaded' : '❌ Failed';
+                const statusText = loaded ? ' Loaded' : ' Failed';
                 return `<li><code>${lib.name}</code>: <span class="status ${statusClass}">${statusText}</span></li>`;
             }).join('');
 
@@ -219,7 +219,7 @@
 
             functionTests.innerHTML = tests.map(test => {
                 const statusClass = test.status === 'success' ? 'success' : 'error';
-                const statusText = test.status === 'success' ? '✅ Pass' : '❌ Fail';
+                const statusText = test.status === 'success' ? ' Pass' : ' Fail';
                 const errorMsg = test.error ? ` - ${test.error}` : '';
                 return `<li><code>${test.name}</code>: <span class="status ${statusClass}">${statusText}</span>${errorMsg}</li>`;
             }).join('');

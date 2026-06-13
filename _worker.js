@@ -1,7 +1,10 @@
 // Cloudflare Pages Worker with KV Storage for Shared Notes
 // KV Namespace binding: SHARED_NOTES (configure in Cloudflare Pages settings)
 
-const DEFAULT_PISTON_URL = 'https://emkc.org/api/v2/piston/execute';
+// Default public Judge0 instance (https://ce.judge0.com) — no key required for low-volume use.
+// Override with JUDGE0_SELF_HOST_URL (env) for a self-hosted Judge0 instance.
+// Optionally set PISTON_SELF_HOST_URL (env) to route via a self-hosted Piston instance instead.
+const PUBLIC_JUDGE0_URL = 'https://ce.judge0.com';
 const MAX_SOURCE_CODE_LENGTH = 50000;
 const MAX_STDIN_LENGTH = 10000;
 
@@ -61,6 +64,11 @@ export default {
     if (path.startsWith('/api/')) {
       return handleAPI(request, env, path);
     }
+
+    const rawMatch = path.match(/^\/raw\/([a-zA-Z0-9_-]+)\/?$/);
+    if (rawMatch) {
+      return handleAPI(request, env, `/api/raw/${rawMatch[1]}`);
+    }
     
     // Static files - serve normally
     const staticExtensions = ['.html', '.js', '.css', '.json', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.eot', '.map', '.md', '.txt', '.xml', '.webmanifest'];
@@ -114,25 +122,49 @@ async function handleAPI(request, env, path) {
 
   // GET /api/code-runner-status - Check active code runner backend
   if (path === '/api/code-runner-status' && request.method === 'GET') {
-    const judge0BaseUrl = normalizeJudge0BaseUrl(env.JUDGE0_SELF_HOST_URL);
-    const usesJudge0 = Boolean(judge0BaseUrl);
+    const judge0SelfHostUrl = normalizeJudge0BaseUrl(env.JUDGE0_SELF_HOST_URL);
+    const pistonSelfHostUrl = normalizePistonBaseUrl(env.PISTON_SELF_HOST_URL);
+
+    let mode, endpoint;
+    if (judge0SelfHostUrl) {
+      mode = 'judge0-self-hosted';
+      endpoint = judge0SelfHostUrl;
+    } else if (pistonSelfHostUrl) {
+      mode = 'piston-self-hosted';
+      endpoint = pistonSelfHostUrl;
+    } else {
+      mode = 'judge0-public';
+      endpoint = PUBLIC_JUDGE0_URL;
+    }
+
     return new Response(JSON.stringify({
       success: true,
       enabled: true,
-      usesJudge0,
-      mode: usesJudge0 ? 'judge0' : 'piston'
+      mode,
+      endpoint
     }), { status: 200, headers: corsHeaders });
   }
 
-  // POST /api/run-code - Execute code via Judge0 self-host or Piston fallback
+  // POST /api/run-code - Execute code
+  //   Priority: self-hosted Judge0 → self-hosted Piston → public Judge0 (ce.judge0.com)
   if (path === '/api/run-code' && request.method === 'POST') {
     return handleRunCode(request, env, corsHeaders);
   }
   
+  // GET /api/status - Feature flags for the frontend
+  if (path === '/api/status' && request.method === 'GET') {
+    return new Response(JSON.stringify({
+      success: true,
+      kvEnabled: !!env.SHARED_NOTES,
+      adminEnabled: !!env.MASTER_KEY,
+      bindingName: 'SHARED_NOTES'
+    }), { status: 200, headers: corsHeaders });
+  }
+
   // Check if KV is configured
   if (!env.SHARED_NOTES) {
     return new Response(JSON.stringify({ 
-      error: 'KV namespace not configured. Add SHARED_NOTES binding in Cloudflare Pages settings.' 
+      error: 'KV namespace not configured. Add a KV binding named SHARED_NOTES to the deployed Worker or the Cloudflare Pages production environment.' 
     }), { status: 500, headers: corsHeaders });
   }
   
@@ -140,7 +172,7 @@ async function handleAPI(request, env, path) {
   if (path === '/api/share' && request.method === 'POST') {
     try {
       const body = await request.json();
-      const { alias, data, title } = body;
+      const { alias, data, title, content, readOnly, updateToken } = body;
       
       if (!alias || !data) {
         return new Response(JSON.stringify({ error: 'Missing alias or data' }), { 
@@ -155,12 +187,47 @@ async function handleAPI(request, env, path) {
         }), { status: 400, headers: corsHeaders });
       }
       
-      // Store in KV with metadata
+      const existingJson = await env.SHARED_NOTES.get(alias);
+      const masterKey = request.headers.get('X-Master-Key');
+      const isAdmin = !!env.MASTER_KEY && masterKey === env.MASTER_KEY;
+
+      const updateTokenHash = updateToken ? await hashUpdateToken(updateToken) : '';
+
+      if (existingJson) {
+        const existing = JSON.parse(existingJson);
+        const tokenMatches = existing.updateTokenHash
+          ? updateTokenHash === existing.updateTokenHash
+          : updateToken && updateToken === existing.updateToken;
+
+        if (!isAdmin && !tokenMatches) {
+          if (existing.readOnly) {
+            return new Response(JSON.stringify({
+              error: 'This alias is read-only. Enter the alias recovery key or use the server admin key to update it.'
+            }), { status: 423, headers: corsHeaders });
+          }
+          return new Response(JSON.stringify({
+            error: 'Alias already exists. Enter the alias recovery key or choose another alias.'
+          }), { status: 409, headers: corsHeaders });
+        }
+      }
+
       const noteEntry = {
         data: data,
         title: title || 'Untitled',
-        createdAt: new Date().toISOString(),
-        views: 0
+        content: typeof content === 'string' ? content : '',
+        readOnly: readOnly !== false,
+        updateTokenHash,
+        creatorFingerprintHash: updateTokenHash
+          ? await hashUpdateToken([
+              request.headers.get('CF-Connecting-IP') || '',
+              request.headers.get('User-Agent') || '',
+              updateTokenHash
+            ].join('|'))
+          : '',
+        createdAt: existingJson ? JSON.parse(existingJson).createdAt : new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        views: existingJson ? (JSON.parse(existingJson).views || 0) : 0,
+        likes: existingJson ? (JSON.parse(existingJson).likes || 0) : 0
       };
       
       await env.SHARED_NOTES.put(alias, JSON.stringify(noteEntry));
@@ -168,12 +235,48 @@ async function handleAPI(request, env, path) {
       return new Response(JSON.stringify({ 
         success: true, 
         alias: alias,
-        url: `/${alias}`
+        url: `/${alias}`,
+        readOnly: noteEntry.readOnly
       }), { status: 200, headers: corsHeaders });
       
     } catch (e) {
       return new Response(JSON.stringify({ error: 'Failed to save note: ' + e.message }), { 
         status: 500, headers: corsHeaders 
+      });
+    }
+  }
+
+  // POST /api/verify-key/:alias - Verify an alias recovery key without updating content
+  if (path.startsWith('/api/verify-key/') && request.method === 'POST') {
+    const alias = path.replace('/api/verify-key/', '');
+    try {
+      const body = await request.json();
+      const updateToken = typeof body.updateToken === 'string' ? body.updateToken : '';
+      const noteJson = await env.SHARED_NOTES.get(alias);
+      if (!noteJson) {
+        return new Response(JSON.stringify({ error: 'Note not found' }), {
+          status: 404, headers: corsHeaders
+        });
+      }
+
+      const note = JSON.parse(noteJson);
+      const updateTokenHash = updateToken ? await hashUpdateToken(updateToken) : '';
+      const valid = note.updateTokenHash
+        ? updateTokenHash === note.updateTokenHash
+        : updateToken && updateToken === note.updateToken;
+
+      if (!valid) {
+        return new Response(JSON.stringify({ error: 'Invalid alias recovery key' }), {
+          status: 401, headers: corsHeaders
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, alias }), {
+        status: 200, headers: corsHeaders
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: 'Failed to verify key: ' + e.message }), {
+        status: 500, headers: corsHeaders
       });
     }
   }
@@ -202,12 +305,73 @@ async function handleAPI(request, env, path) {
         data: note.data,
         title: note.title,
         createdAt: note.createdAt,
-        views: note.views
+        views: note.views,
+        likes: note.likes || 0,
+        readOnly: note.readOnly !== false
       }), { status: 200, headers: corsHeaders });
       
     } catch (e) {
       return new Response(JSON.stringify({ error: 'Failed to get note: ' + e.message }), { 
         status: 500, headers: corsHeaders 
+      });
+    }
+  }
+
+  // POST /api/like/:alias - Increment a shared note like count
+  if (path.startsWith('/api/like/') && request.method === 'POST') {
+    const alias = path.replace('/api/like/', '');
+
+    try {
+      const noteJson = await env.SHARED_NOTES.get(alias);
+      if (!noteJson) {
+        return new Response(JSON.stringify({ error: 'Note not found' }), {
+          status: 404, headers: corsHeaders
+        });
+      }
+
+      const note = JSON.parse(noteJson);
+      note.likes = (note.likes || 0) + 1;
+      note.updatedAt = new Date().toISOString();
+      await env.SHARED_NOTES.put(alias, JSON.stringify(note));
+
+      return new Response(JSON.stringify({
+        success: true,
+        alias,
+        likes: note.likes
+      }), { status: 200, headers: corsHeaders });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: 'Failed to like note: ' + e.message }), {
+        status: 500, headers: corsHeaders
+      });
+    }
+  }
+
+  // GET /api/raw/:alias - Raw markdown content for pastebin-style sharing
+  if (path.startsWith('/api/raw/') && request.method === 'GET') {
+    const alias = path.replace('/api/raw/', '');
+
+    try {
+      const noteJson = await env.SHARED_NOTES.get(alias);
+      if (!noteJson) {
+        return new Response('Note not found', {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'text/plain; charset=utf-8' }
+        });
+      }
+
+      const note = JSON.parse(noteJson);
+      return new Response(note.content || '', {
+        status: 200,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Content-Type': 'text/markdown; charset=utf-8',
+          'Cache-Control': 'public, max-age=60'
+        }
+      });
+    } catch (e) {
+      return new Response('Failed to get raw note: ' + e.message, {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'text/plain; charset=utf-8' }
       });
     }
   }
@@ -257,7 +421,11 @@ async function handleAPI(request, env, path) {
             alias: key.name,
             title: note.title,
             createdAt: note.createdAt,
-            views: note.views || 0
+            updatedAt: note.updatedAt,
+            views: note.views || 0,
+            likes: note.likes || 0,
+            readOnly: note.readOnly !== false,
+            rawUrl: `/api/raw/${key.name}`
           });
         }
       }
@@ -294,7 +462,7 @@ async function handleAPI(request, env, path) {
   });
 }
 
-function normalizeJudge0BaseUrl(value) {
+function normalizeBaseUrl(value) {
   if (!value || typeof value !== 'string') return null;
   try {
     const parsed = new URL(value.trim());
@@ -303,6 +471,20 @@ function normalizeJudge0BaseUrl(value) {
   } catch {
     return null;
   }
+}
+
+async function hashUpdateToken(token) {
+  const input = new TextEncoder().encode(String(token));
+  const digest = await crypto.subtle.digest('SHA-256', input);
+  return Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function normalizeJudge0BaseUrl(value) {
+  return normalizeBaseUrl(value);
+}
+
+function normalizePistonBaseUrl(value) {
+  return normalizeBaseUrl(value);
 }
 
 function parseLanguageId(languageId) {
@@ -401,102 +583,109 @@ async function handleRunCode(request, env, corsHeaders) {
     });
   }
 
-  const judge0BaseUrl = normalizeJudge0BaseUrl(env.JUDGE0_SELF_HOST_URL);
-  if (judge0BaseUrl) {
-    const judge0LanguageId = languageMeta.judge0Id || parseLanguageId(body.languageId);
-    if (!judge0LanguageId) {
+  // ── Priority 1: Self-hosted Judge0 ─────────────────────────────────────────
+  const judge0SelfHostUrl = normalizeJudge0BaseUrl(env.JUDGE0_SELF_HOST_URL);
+  if (judge0SelfHostUrl) {
+    return callJudge0(judge0SelfHostUrl, 'judge0-self-hosted', languageMeta, body, sourceCode, stdin, corsHeaders);
+  }
+
+  // ── Priority 2: Self-hosted Piston ─────────────────────────────────────────
+  const pistonSelfHostUrl = normalizePistonBaseUrl(env.PISTON_SELF_HOST_URL);
+  if (pistonSelfHostUrl) {
+    if (!languageMeta.pistonLanguage) {
       return new Response(JSON.stringify({
-        error: 'Language not supported for Judge0 self-host.'
+        error: 'Language not supported for Piston.'
       }), { status: 400, headers: corsHeaders });
     }
+    return callPiston(pistonSelfHostUrl, languageMeta, sourceCode, stdin, corsHeaders);
+  }
 
-    const submissionPayload = {
-      language_id: judge0LanguageId,
-      source_code: sourceCode,
-      stdin
-    };
+  // ── Priority 3: Public Judge0 (ce.judge0.com) ──────────────────────────────
+  return callJudge0(PUBLIC_JUDGE0_URL, 'judge0-public', languageMeta, body, sourceCode, stdin, corsHeaders);
+}
 
-    if (typeof body.expectedOutput === 'string') {
-      submissionPayload.expected_output = body.expectedOutput;
-    }
-
-    const url = `${judge0BaseUrl}/submissions?base64_encoded=false&wait=true&fields=stdout,stderr,compile_output,message,status,exit_code,time,memory`;
-
-    let judge0Response;
-    try {
-      judge0Response = await fetchWithTimeout(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(submissionPayload)
-      });
-    } catch (err) {
-      const timeoutError = err && err.name === 'AbortError';
-      return new Response(JSON.stringify({
-        error: timeoutError ? 'Code execution timed out while contacting Judge0' : `Judge0 request failed: ${err.message}`
-      }), {
-        status: 502,
-        headers: corsHeaders
-      });
-    }
-
-    let judge0Data;
-    try {
-      judge0Data = await judge0Response.json();
-    } catch {
-      return new Response(JSON.stringify({ error: 'Invalid response from Judge0' }), {
-        status: 502,
-        headers: corsHeaders
-      });
-    }
-
-    if (!judge0Response.ok) {
-      return new Response(JSON.stringify({
-        error: 'Judge0 API error',
-        details: judge0Data.message || judge0Data.error || 'Unknown error',
-        upstreamStatus: judge0Response.status
-      }), {
-        status: 502,
-        headers: corsHeaders
-      });
-    }
-
+async function callJudge0(baseUrl, providerLabel, languageMeta, body, sourceCode, stdin, corsHeaders) {
+  const judge0LanguageId = languageMeta.judge0Id || parseLanguageId(body.languageId);
+  if (!judge0LanguageId) {
     return new Response(JSON.stringify({
-      success: true,
-      provider: 'judge0',
-      result: {
-        status: judge0Data.status || null,
-        stdout: judge0Data.stdout || '',
-        stderr: judge0Data.stderr || '',
-        compileOutput: judge0Data.compile_output || '',
-        message: judge0Data.message || '',
-        exitCode: judge0Data.exit_code ?? null,
-        time: judge0Data.time || null,
-        memory: judge0Data.memory || null
-      }
-    }), {
-      status: 200,
+      error: 'Language not supported for Judge0. Provide a valid languageId or use a supported language name.'
+    }), { status: 400, headers: corsHeaders });
+  }
+
+  const submissionPayload = {
+    language_id: judge0LanguageId,
+    source_code: sourceCode,
+    stdin
+  };
+
+  if (typeof body.expectedOutput === 'string') {
+    submissionPayload.expected_output = body.expectedOutput;
+  }
+
+  const url = `${baseUrl}/submissions?base64_encoded=false&wait=true&fields=stdout,stderr,compile_output,message,status,exit_code,time,memory`;
+
+  let judge0Response;
+  try {
+    judge0Response = await fetchWithTimeout(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Judge0-User': 'markdown-notes' },
+      body: JSON.stringify(submissionPayload)
+    });
+  } catch (err) {
+    const timeoutError = err && err.name === 'AbortError';
+    return new Response(JSON.stringify({
+      error: timeoutError
+        ? 'Code execution timed out while contacting Judge0'
+        : `Judge0 request failed: ${err.message}`
+    }), { status: 502, headers: corsHeaders });
+  }
+
+  let judge0Data;
+  try {
+    judge0Data = await judge0Response.json();
+  } catch {
+    return new Response(JSON.stringify({ error: 'Invalid response from Judge0' }), {
+      status: 502,
       headers: corsHeaders
     });
   }
 
-  if (!languageMeta.pistonLanguage) {
+  if (!judge0Response.ok) {
     return new Response(JSON.stringify({
-      error: 'Language not supported for Piston.'
-    }), {
-      status: 400,
-      headers: corsHeaders
-    });
+      error: 'Judge0 API error',
+      details: judge0Data.message || judge0Data.error || 'Unknown error',
+      upstreamStatus: judge0Response.status
+    }), { status: 502, headers: corsHeaders });
   }
 
+  return new Response(JSON.stringify({
+    success: true,
+    provider: providerLabel,
+    result: {
+      status: judge0Data.status || null,
+      stdout: judge0Data.stdout || '',
+      stderr: judge0Data.stderr || '',
+      compileOutput: judge0Data.compile_output || '',
+      message: judge0Data.message || '',
+      exitCode: judge0Data.exit_code ?? null,
+      time: judge0Data.time || null,
+      memory: judge0Data.memory || null
+    }
+  }), { status: 200, headers: corsHeaders });
+}
+
+async function callPiston(baseUrl, languageMeta, sourceCode, stdin, corsHeaders) {
   const pistonPayload = {
     language: languageMeta.pistonLanguage,
     source: sourceCode,
     stdin
   };
 
+  const url = `${baseUrl}/api/v2/execute`;
+
   let pistonResponse;
   try {
-    pistonResponse = await fetchWithTimeout(DEFAULT_PISTON_URL, {
+    pistonResponse = await fetchWithTimeout(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(pistonPayload)
@@ -504,11 +693,10 @@ async function handleRunCode(request, env, corsHeaders) {
   } catch (err) {
     const timeoutError = err && err.name === 'AbortError';
     return new Response(JSON.stringify({
-      error: timeoutError ? 'Code execution timed out while contacting Piston' : `Piston request failed: ${err.message}`
-    }), {
-      status: 502,
-      headers: corsHeaders
-    });
+      error: timeoutError
+        ? 'Code execution timed out while contacting Piston'
+        : `Piston request failed: ${err.message}`
+    }), { status: 502, headers: corsHeaders });
   }
 
   let pistonData;
@@ -526,10 +714,7 @@ async function handleRunCode(request, env, corsHeaders) {
       error: 'Piston API error',
       details: pistonData.message || pistonData.error || 'Unknown error',
       upstreamStatus: pistonResponse.status
-    }), {
-      status: 502,
-      headers: corsHeaders
-    });
+    }), { status: 502, headers: corsHeaders });
   }
 
   const run = pistonData.run || {};
@@ -549,7 +734,7 @@ async function handleRunCode(request, env, corsHeaders) {
 
   return new Response(JSON.stringify({
     success: true,
-    provider: 'piston',
+    provider: 'piston-self-hosted',
     result: {
       status: {
         id: success ? 3 : 11,
@@ -563,8 +748,5 @@ async function handleRunCode(request, env, corsHeaders) {
       time: run.time || null,
       memory: run.memory || null
     }
-  }), {
-    status: 200,
-    headers: corsHeaders
-  });
+  }), { status: 200, headers: corsHeaders });
 }
